@@ -13,7 +13,7 @@ public class OrderDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
+    @Column
     private Long id;
 
     @Column(name = "created_at", columnDefinition = "TIMESTAMP", nullable = false)
