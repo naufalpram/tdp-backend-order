@@ -2,11 +2,13 @@ package com.edts.tdp.batch4.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "order_detail")
+@Data
 public class OrderDetail {
 
     @Id
