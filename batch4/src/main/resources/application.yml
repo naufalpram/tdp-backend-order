@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: tdp
+    url: jdbc:mysql://172.18.185.131:3306/tdp4_order
+    password: tdp2024
+  jpa:
+    generate-ddl: 'false'
+    #    database-platform: org.hibernate.dialect.MySQL5Dialect
+    hibernate:
+      ddl-auto: update
