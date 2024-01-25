@@ -1,5 +1,6 @@
 package com.edts.tdp.batch4.model;
 
+import com.edts.tdp.batch4.constant.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -36,5 +37,13 @@ public class OrderHeader {
 
     @Column(name = "total_paid", nullable = false)
     private Double totalPaid;
+
+    @Column(name = "status", nullable = false)
+    private String status;
+
+    public OrderHeader() {
+        this.createdAt = LocalDateTime.now();
+        this.status = Status.ORDERED;
+    }
 
 }
