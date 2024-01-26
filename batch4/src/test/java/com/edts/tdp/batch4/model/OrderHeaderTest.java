@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class OrderHeaderTest {
     private OrderHeader orderHeader;
-    private OrderDetail orderDetailList;
+    private OrderDetail orderDetail;
     private OrderDelivery orderDelivery;
     private LocalDateTime createdAt, modifiedAt;
 
@@ -22,13 +22,13 @@ public class OrderHeaderTest {
        orderHeader.setTotalPaid(12.500);
        orderHeader.setStatus("send");
 
-       orderDetailList = new OrderDetail();
-       orderDetailList.setId(1L);
-       orderDetailList.setCreatedBy("12 Januari 2023");
-       orderDetailList.setModifiedBy("13 Januari 2023");
-       orderDetailList.setProductId(12L);
-       orderDetailList.setQty(12);
-       orderDetailList.setPrice(123000);
+       orderDetail = new OrderDetail();
+       orderDetail.setId(1L);
+       orderDetail.setCreatedBy("12 Januari 2023");
+       orderDetail.setModifiedBy("13 Januari 2023");
+       orderDetail.setProductId(12L);
+       orderDetail.setQty(12);
+       orderDetail.setPrice(123000);
 
        orderDelivery = new OrderDelivery();
        orderDelivery.setId(1L);
