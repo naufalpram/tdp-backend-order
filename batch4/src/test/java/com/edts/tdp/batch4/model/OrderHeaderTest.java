@@ -2,21 +2,14 @@ package com.edts.tdp.batch4.model;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
-import org.springframework.data.annotation.CreatedBy;
-
 import java.time.LocalDateTime;
-
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class OrderHeaderTest {
     private OrderHeader orderHeader;
-    //private OrderDetailList orderDetailList;
-    //private OrderDelivery orderDelivery;
+    private OrderDetail orderDetailList;
+    private OrderDelivery orderDelivery;
     private LocalDateTime createdAt, modifiedAt;
-
-
 
     @BeforeEach
     void setUp(){
@@ -29,6 +22,19 @@ public class OrderHeaderTest {
        orderHeader.setTotalPaid(12.500);
        orderHeader.setStatus("send");
 
+       orderDetailList = new OrderDetail();
+       orderDetailList.setId(1L);
+       orderDetailList.setCreatedBy("12 Januari 2023");
+       orderDetailList.setModifiedBy("13 Januari 2023");
+       orderDetailList.setProductId(12L);
+       orderDetailList.setQty(12);
+       orderDetailList.setPrice(123000);
+
+       orderDelivery = new OrderDelivery();
+       orderDelivery.setId(1L);
+       orderDelivery.setCreatedBy("12 Januari 2023");
+
+
        createdAt = LocalDateTime.now();
        orderHeader.setCreatedAt(createdAt);
 
@@ -40,13 +46,13 @@ public class OrderHeaderTest {
     void testGetId(){assertEquals(1, orderHeader.getId());}
 
     @Test //false test
-    void testGetWrongId(){assertNotEquals(1, orderHeader.getId());}
+    void testGetWrongId(){assertNotEquals(2, orderHeader.getId());}
 
     @Test
     void testGetCreatedAt(){assertEquals(createdAt, orderHeader.getCreatedAt());}
 
     @Test //true test
-    void testGetCreateBy(){assertEquals(1, orderHeader.getCreatedBy());}
+    void testGetCreateBy(){assertEquals(12, orderHeader.getCreatedBy());}
 
     @Test //false test
     void testGetWrongCreateBy(){assertNotEquals(1, orderHeader.getCreatedBy());}
@@ -55,20 +61,20 @@ public class OrderHeaderTest {
     void testGetModifiedAt(){assertEquals(modifiedAt,orderHeader.getModifiedAt());}
 
     @Test//true
-    void testGetCustomerId(){assertEquals(1, orderHeader.getCustomerId());}
+    void testGetCustomerId(){assertEquals(2, orderHeader.getCustomerId());}
 
     @Test //false
     void testGetWrongCustomerId(){assertNotEquals(1, orderHeader.getCustomerId());}
 
     //orderNumber
     @Test//true
-    void testGetTotalPaid(){assertEquals(12500, orderHeader.getTotalPaid());}
+    void testGetTotalPaid(){assertEquals(12.500, orderHeader.getTotalPaid());}
 
     @Test//false
     void testGetWrongPaid(){assertNotEquals(12500, orderHeader.getTotalPaid());}
 
     @Test
-    void testGetStatus(){assertEquals("open", orderHeader.getStatus());}
+    void testGetStatus(){assertEquals("send", orderHeader.getStatus());}
 
     @Test
     void testGetWrongStatus() {
