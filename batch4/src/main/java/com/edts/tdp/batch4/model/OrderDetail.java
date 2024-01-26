@@ -19,13 +19,13 @@ public class OrderDetail {
     @Column(name = "created_at", columnDefinition = "TIMESTAMP", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "created_by", nullable = false)
+    @Column(name = "created_by", nullable = false, length = 20)
     private String createdBy;
 
     @Column(name = "modified_at", columnDefinition = "TIMESTAMP")
     private LocalDateTime modifiedAt;
 
-    @Column(name = "modified_by")
+    @Column(name = "modified_by", length = 20)
     private String modifiedBy;
 
     @JsonBackReference

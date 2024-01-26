@@ -22,14 +22,14 @@ public class OrderHeader {
     @Column(name = "created_at", columnDefinition = "TIMESTAMP", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "created_by", nullable = false)
-    private Long createdBy;
+    @Column(name = "created_by", nullable = false, length = 20)
+    private String createdBy;
 
     @Column(name = "modified_at", columnDefinition = "TIMESTAMP")
     private LocalDateTime modifiedAt;
 
-    @Column(name = "modified_by", nullable = false)
-    private Long modifiedBy;
+    @Column(name = "modified_by", nullable = false, length = 20)
+    private String modifiedBy;
 
     @Column(name = "customer_id", nullable = false)
     private Long customerId;
