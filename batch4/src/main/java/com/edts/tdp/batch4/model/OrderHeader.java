@@ -52,7 +52,7 @@ public class OrderHeader {
      *private OrderDelivery orderDelivery; ngreference ke classnya
      */
     @JsonManagedReference
-    @OneToMany(mappedBy = "order_header")
+    @OneToMany(mappedBy = "orderHeader")
     private List<OrderDetail> orderDetailList;
 
     /*
@@ -61,8 +61,8 @@ public class OrderHeader {
     *@JsonIgnoreProperties ini untuk mencegah pembacaan berulang dari relasi
     *private OrderDelivery orderDelivery; ngreference ke classnya
     */
-    @OneToOne(mappedBy = "order_header")
-    @JsonIgnoreProperties({"order_header"})
+    @OneToOne(mappedBy = "orderHeader")
+    @JsonIgnoreProperties({"orderHeader"})
     private OrderDelivery orderDelivery;
 
     public OrderHeader() {

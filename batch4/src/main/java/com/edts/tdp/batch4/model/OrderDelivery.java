@@ -1,4 +1,5 @@
 package com.edts.tdp.batch4.model;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ public class OrderDelivery {
     @Column(name = "modified_by") private String modifiedBy;
     @OneToOne
     @JoinColumn(name = "order_header_id", referencedColumnName = "id")
+    @JsonIgnoreProperties({"orderDelivery"})
     private OrderHeader orderHeader;
     @Column(nullable = false) private String street;
     @Column(nullable = false) private String province;
