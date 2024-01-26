@@ -1,4 +1,4 @@
-package com.edts.tdp.batch4.bean;
+package com.edts.tdp.batch4.bean.request;
 
 import java.util.List;
 
