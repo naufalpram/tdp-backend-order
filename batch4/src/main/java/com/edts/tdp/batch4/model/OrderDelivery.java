@@ -8,23 +8,23 @@ import java.time.LocalDateTime;
 @Data
 @Table(name = "order_delivery")
 public class OrderDelivery {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column
-    private long id;
-
-    @Column(name = "created_at", columnDefinition = "TIMESTAMP")
+    @Column private long id;
+    
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP") 
     private LocalDateTime createdAt;
-
-    @Column(name = "created_by", nullable = false, length = 20)
+    
+    @Column(name = "created_by", nullable = false, length = 20) 
     private String createdBy;
-
-    @Column(name = "modified_at", columnDefinition = "TIMESTAMP")
+    
+    @Column(name = "modified_at", columnDefinition = "TIMESTAMP") 
     private LocalDateTime modifiedAt;
-
-    @Column(name = "modified_by", length = 20)
+    
+    @Column(name = "modified_by", length = 20) 
     private String modifiedBy;
-
+    
     @OneToOne
     @JoinColumn(name = "order_header_id", referencedColumnName = "id")
     @JsonIgnoreProperties({"orderDelivery"})
