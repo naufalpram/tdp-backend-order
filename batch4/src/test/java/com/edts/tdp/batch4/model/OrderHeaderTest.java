@@ -16,8 +16,8 @@ public class OrderHeaderTest {
        orderHeader = new OrderHeader();
        orderHeader.setId(1L);
        orderHeader.setCustomerId(2L);
-       orderHeader.setCreatedBy(12L);
-       orderHeader.setModifiedBy(1L);
+       orderHeader.setCreatedBy("Amini");
+       orderHeader.setModifiedBy("Amini");
        orderHeader.setOrderNumber("123l");
        orderHeader.setTotalPaid(12.500);
        orderHeader.setStatus("send");
