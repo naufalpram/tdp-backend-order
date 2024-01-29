@@ -46,8 +46,10 @@ public class OrderService {
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body length can't be zero", path);
         }
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
-        DecimalFormat numFormat = new DecimalFormat("#.00");
-        double distance = OrderLogicService.distanceCounter(-6.175205678775132, 106.82715894445303);
+        DecimalFormat priceFormat = new DecimalFormat("#.##");
+        DecimalFormat distanceFormat = new DecimalFormat("#.00");
+        //double distance = OrderLogicService.distanceCounter(-6.175205678775132, 106.82715894445303);
+        double distance = OrderLogicService.distanceCounter(-8.498191844703317, 140.4021760551087);
 
         OrderHeader orderHeader = new OrderHeader();
         orderHeader.setCustomerId(24L);
@@ -66,9 +68,12 @@ public class OrderService {
         orderDelivery.setCreatedBy("amini");
         orderDelivery.setStreet("jalan sudirman");
         orderDelivery.setProvince("Jakarta Pusat");
-        orderDelivery.setDistanceInKm(Double.parseDouble(numFormat.format(distance)));
-        orderDelivery.setLatitude(-6.175205678775132);
-        orderDelivery.setLongitude(106.82715894445303);
+        orderDelivery.setDistanceInKm(Double.parseDouble(distanceFormat.format(distance)));
+//        orderDelivery.setLatitude(-6.175205678775132);
+//        orderDelivery.setLongitude(106.82715894445303);
+
+        orderDelivery.setLatitude(-8.498191844703317);
+        orderDelivery.setLongitude(140.4021760551087);
 
         ArrayList<OrderDetail> arr = new ArrayList<>();
         double totalPrice = 0.0;
@@ -86,7 +91,7 @@ public class OrderService {
         }
         this.orderDetailRepository.saveAll(arr);
 
-        tempOrderHeader.setTotalPaid(Double.valueOf(numFormat.format(tempOrderHeader.getTotalPaid() + totalPrice)));
+        tempOrderHeader.setTotalPaid(Double.valueOf(priceFormat.format(tempOrderHeader.getTotalPaid() + totalPrice)));
         tempOrderHeader = this.orderHeaderRepository.save(tempOrderHeader);
 
         orderDelivery.setOrderHeader(tempOrderHeader);
@@ -95,7 +100,7 @@ public class OrderService {
         CreatedOrderBean orderBean = new CreatedOrderBean();
         orderBean.setCreatedAt(tempOrderHeader.getCreatedAt());
         orderBean.setOrderNumber(tempOrderHeader.getOrderNumber());
-        orderBean.setTotalPaid(tempOrderHeader.getTotalPaid());
+        orderBean.setTotalPaid(String.format("%3f", tempOrderHeader.getTotalPaid()));
         orderBean.setStatus(tempOrderHeader.getStatus());
 
         response.setTimestamp(LocalDateTime.now());
