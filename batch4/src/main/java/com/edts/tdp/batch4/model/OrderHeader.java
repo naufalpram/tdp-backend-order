@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 
 @Entity
@@ -34,8 +35,7 @@ public class OrderHeader {
     @Column(name = "customer_id", nullable = false)
     private Long customerId;
 
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "order_number", unique = true)
+    @Column(name = "order_number", unique = true, length = 24)
     private String orderNumber;
 
     @Column(name = "total_paid", nullable = false)
@@ -68,6 +68,7 @@ public class OrderHeader {
     public OrderHeader() {
         this.createdAt = LocalDateTime.now();
         this.status = Status.ORDERED;
+        this.orderNumber = UUID.randomUUID().toString();
     }
 
 }

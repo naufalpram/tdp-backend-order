@@ -18,9 +18,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class OrderService {
@@ -39,67 +41,62 @@ public class OrderService {
     }
 
     public BaseResponseBean<CreatedOrderBean> createOrder(List<RequestProductBean> body){
+        String path = "/order/create";
+        if(body.isEmpty()){
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body length can't be zero", path);
+        }
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
+        DecimalFormat numFormat = new DecimalFormat("#.00");
+        double distance = OrderLogicService.distanceCounter(-6.175205678775132, 106.82715894445303);
+
         OrderHeader orderHeader = new OrderHeader();
         orderHeader.setCustomerId(24L);
         orderHeader.setCreatedBy("amini");
         orderHeader.setTotalPaid(0.0);
         orderHeader.setModifiedBy("amini dwi");
-        OrderHeader orderHeader1 = this.orderHeaderRepository.save(orderHeader);
+        orderHeader.setTotalPaid(OrderLogicService.deliveryCost(distance));
+        Optional<OrderHeader> cek = this.orderHeaderRepository.findByOrderNumber(orderHeader.getOrderNumber());
+
+        if (cek.isPresent())
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, String.format("Order with orderNumber: %s is present in the database", orderHeader.getOrderNumber()), path);
+
+        OrderHeader tempOrderHeader = this.orderHeaderRepository.save(orderHeader);
 
         OrderDelivery orderDelivery = new OrderDelivery();
         orderDelivery.setCreatedBy("amini");
         orderDelivery.setStreet("jalan sudirman");
         orderDelivery.setProvince("Jakarta Pusat");
-        orderDelivery.setDistanceInKm(1.0);
+        orderDelivery.setDistanceInKm(Double.parseDouble(numFormat.format(distance)));
         orderDelivery.setLatitude(-6.175205678775132);
         orderDelivery.setLongitude(106.82715894445303);
 
         ArrayList<OrderDetail> arr = new ArrayList<>();
+        double totalPrice = 0.0;
         for (int i = 0; i < body.size(); i++) {
+            RequestProductBean item = body.get(i);
             OrderDetail orderDetail = new OrderDetail();
-            orderDetail.setProductId(body.get(i).getProductId());
-            orderDetail.setPrice(body.get(i).getPrice());
-            orderDetail.setQty(body.get(i).getQty());
+            orderDetail.setProductId(item.getProductId());
+            orderDetail.setPrice(item.getPrice());
+            orderDetail.setQty(item.getQty());
             orderDetail.setCreatedBy("amini");
-            orderDetail.setOrderHeader(orderHeader);
+            orderDetail.setOrderHeader(tempOrderHeader);
 
             arr.add(orderDetail);
+            totalPrice += (item.getPrice() * item.getQty());
         }
         this.orderDetailRepository.saveAll(arr);
 
+        tempOrderHeader.setTotalPaid(Double.valueOf(numFormat.format(tempOrderHeader.getTotalPaid() + totalPrice)));
+        tempOrderHeader = this.orderHeaderRepository.save(tempOrderHeader);
 
-//        OrderDetail orderDetail1 = new OrderDetail();
-//        orderDetail1.setCreatedBy("amini");
-//        orderDetail1.setQty(0);
-//        orderDetail1.setPrice(0);
-//
-//        OrderDetail orderDetail2 = new OrderDetail();
-//        orderDetail2.setCreatedBy("amini");
-//        orderDetail2.setQty(0);
-//        orderDetail2.setPrice(0);
-//
-//        OrderDetail orderDetail3 = new OrderDetail();
-//        orderDetail3.setCreatedBy("amini");
-//        orderDetail3.setQty(0);
-//        orderDetail3.setPrice(0);
-
-        orderDelivery.setOrderHeader(orderHeader1);
-//        orderDetail1.setOrderHeader(orderHeader1);
-//        orderDetail2.setOrderHeader(orderHeader1);
-//        orderDetail3.setOrderHeader(orderHeader1);
-
+        orderDelivery.setOrderHeader(tempOrderHeader);
         this.orderDeliveryRepository.save(orderDelivery);
-//        this.orderDetailRepository.save(orderDetail1);
-//        this.orderDetailRepository.save(orderDetail2);
-//        this.orderDetailRepository.save(orderDetail3);
 
-        //response.setMessage();
         CreatedOrderBean orderBean = new CreatedOrderBean();
-        orderBean.setCreatedAt(orderHeader1.getCreatedAt());
-        orderBean.setOrderNumber(orderHeader1.getOrderNumber());
-        orderBean.setTotalPaid(orderHeader1.getTotalPaid());
-        orderBean.setStatus(orderHeader1.getStatus());
+        orderBean.setCreatedAt(tempOrderHeader.getCreatedAt());
+        orderBean.setOrderNumber(tempOrderHeader.getOrderNumber());
+        orderBean.setTotalPaid(tempOrderHeader.getTotalPaid());
+        orderBean.setStatus(tempOrderHeader.getStatus());
 
         response.setTimestamp(LocalDateTime.now());
         response.setStatus(HttpStatus.OK);
