@@ -12,5 +12,6 @@ import java.util.Optional;
 public interface OrderHeaderRepository extends JpaRepository<OrderHeader, Integer> {
     Page<OrderHeader> findAllByCustomerId(Long customerId, Pageable pageable);
     Page<OrderHeader> findAllByCustomerIdAndStatus(long customerId, String status, Pageable pageable);
+    Optional<OrderHeader> findByOrderNumber(String orderNumber);
     Optional<OrderHeader> findByCustomerIdAndOrderNumber(long customerId, String orderNumber);
 }
