@@ -4,7 +4,6 @@ import com.edts.tdp.batch4.model.OrderHeader;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -14,4 +13,5 @@ public interface OrderHeaderRepository extends JpaRepository<OrderHeader, Intege
     Page<OrderHeader> findAllByCustomerId(Long customerId, Pageable pageable);
     Page<OrderHeader> findAllByCustomerIdAndStatus(long customerId, String status, Pageable pageable);
     Optional<OrderHeader> findByOrderNumber(String orderNumber);
+    Optional<OrderHeader> findByCustomerIdAndOrderNumber(long customerId, String orderNumber);
 }

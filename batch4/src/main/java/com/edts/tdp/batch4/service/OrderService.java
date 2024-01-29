@@ -1,8 +1,9 @@
 package com.edts.tdp.batch4.service;
 
 import com.edts.tdp.batch4.bean.BaseResponseBean;
-import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
+import com.edts.tdp.batch4.constant.Status;
+import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.model.OrderDelivery;
 import com.edts.tdp.batch4.model.OrderDetail;
@@ -157,5 +158,66 @@ public class OrderService {
             response.setTimestamp(LocalDateTime.now());
         }
         return response;
+    }
+
+    public BaseResponseBean<CreatedOrderBean> updateHistoryStatus(long customerId,
+                                                                  String orderNumber) {
+        String path = "/update/sent";
+        BaseResponseBean<CreatedOrderBean> orderBean = new BaseResponseBean<>();
+        if ( customerId < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+        Optional<OrderHeader> headerData = orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
+        if ( headerData.isEmpty() ) {
+            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With Order Number: %s is not found",orderNumber), path);
+        } else {
+            OrderHeader orderHeader = headerData.get();
+            if ( !orderHeader.getStatus().equals(Status.ORDERED) ) {
+                throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Order Number" + "Order : " + orderHeader.getStatus(), path);
+            }
+            orderHeader.setStatus(Status.SENT);
+            orderHeader.setModifiedAt(LocalDateTime.now());
+            orderHeader.setModifiedBy("Admin");
+            orderHeader = orderHeaderRepository.save(orderHeader);
+            CreatedOrderBean createdOrderBean = new CreatedOrderBean();
+            createdOrderBean.setStatus(Status.SENT);
+            createdOrderBean.setOrderNumber(orderNumber);
+            createdOrderBean.setModifiedAt(LocalDateTime.now());
+            orderBean.setStatus(HttpStatus.OK);
+            orderBean.setData(createdOrderBean);
+            orderBean.setMessage(HttpStatus.OK.getReasonPhrase());
+            orderBean.setCode(200);
+            orderBean.setTimestamp(LocalDateTime.now());
+        }
+        return orderBean;
+    }
+
+    public BaseResponseBean<CreatedOrderBean> cancelOrder(long customerId,
+                                                     String orderNumber) {
+        String path = "update/cancel";
+        BaseResponseBean<CreatedOrderBean> orderBean = new BaseResponseBean<>();
+        if ( customerId < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+        Optional<OrderHeader> headerData = orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
+        if ( headerData.isEmpty() ) {
+            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With Order Number: %s is not found",orderNumber), path);
+        } else {
+            OrderHeader orderHeader = headerData.get();
+            if ( !orderHeader.getStatus().equals(Status.ORDERED)) {
+                throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Order Can't Cancel" + " Order : " + orderHeader.getStatus(), path);
+            } else {
+                orderHeader.setStatus(Status.CANCELLED);
+                orderHeader.setModifiedAt(LocalDateTime.now());
+                orderHeader.setModifiedBy("Admin");
+                orderHeader = orderHeaderRepository.save(orderHeader);
+                CreatedOrderBean createdOrderBean = new CreatedOrderBean();
+                createdOrderBean.setStatus(Status.SENT);
+                createdOrderBean.setOrderNumber(orderNumber);
+                createdOrderBean.setModifiedAt(LocalDateTime.now());
+                orderBean.setStatus(HttpStatus.OK);
+                orderBean.setData(createdOrderBean);
+                orderBean.setMessage(HttpStatus.OK.getReasonPhrase());
+                orderBean.setCode(200);
+                orderBean.setTimestamp(LocalDateTime.now());
+            }
+        }
+        return orderBean;
     }
 }

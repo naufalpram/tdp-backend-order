@@ -32,13 +32,15 @@ public class OrderController {
     }
 
     @GetMapping("/get-history")
-    public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrders(@RequestParam Long customerId, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrders(@RequestParam Long customerId,
+                                                                            @RequestParam int page,
+                                                                            @RequestParam int size) {
         BaseResponseBean<Page<OrderHeader>> response;
         response = orderService.getAllOrderByCustomerId(customerId, page, size);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping("/get-history/filter")
+    @GetMapping("/get-history")
     public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrdersByStatus(@RequestParam long customerId,
                                                                            @RequestParam String status,
                                                                            @RequestParam int page,
@@ -46,5 +48,21 @@ public class OrderController {
         BaseResponseBean<Page<OrderHeader>> responseBean;
         responseBean = orderService.findAllByCustomerIdAndStatus(customerId, status, page, size);
         return new ResponseEntity<>(responseBean, HttpStatus.OK);
+    }
+
+    @PostMapping("/update/sent")
+    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> updateOrderSent(@RequestParam long customerId,
+                                                                              @RequestParam String orderNumber) {
+        BaseResponseBean<CreatedOrderBean> orderBean;
+        orderBean = orderService.updateHistoryStatus(customerId, orderNumber);
+        return new ResponseEntity<>(orderBean, HttpStatus.OK);
+    }
+
+    @PostMapping("update/cancel")
+    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> cancelOrder(@RequestParam long customerId,
+                                                                          @RequestParam String orderNumber) {
+        BaseResponseBean<CreatedOrderBean> orderBean;
+        orderBean = orderService.cancelOrder(customerId, orderNumber);
+        return new ResponseEntity<>(orderBean, HttpStatus.OK);
     }
 }
