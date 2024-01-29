@@ -32,7 +32,9 @@ public class OrderController {
     }
 
     @GetMapping("/get-history")
-    public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrders(@RequestParam Long customerId, @RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrders(@RequestParam Long customerId,
+                                                                            @RequestParam int page,
+                                                                            @RequestParam int size) {
         BaseResponseBean<Page<OrderHeader>> response;
         response = orderService.getAllOrderByCustomerId(customerId, page, size);
         return new ResponseEntity<>(response, HttpStatus.OK);
