@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @Table(name = "order_delivery")
 public class OrderDelivery {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column private long id;
@@ -15,13 +16,13 @@ public class OrderDelivery {
     @Column(name = "created_at", columnDefinition = "TIMESTAMP") 
     private LocalDateTime createdAt;
     
-    @Column(name = "created_by", nullable = false) 
+    @Column(name = "created_by", nullable = false, length = 20) 
     private String createdBy;
     
     @Column(name = "modified_at", columnDefinition = "TIMESTAMP") 
     private LocalDateTime modifiedAt;
     
-    @Column(name = "modified_by") 
+    @Column(name = "modified_by", length = 20) 
     private String modifiedBy;
     
     @OneToOne
