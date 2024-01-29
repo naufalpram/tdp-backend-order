@@ -38,7 +38,7 @@ public class OrderController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping("/get-history")
+    @GetMapping("/get-history/filter")
     public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrdersByStatus(@RequestParam long customerId,
                                                                            @RequestParam String status,
                                                                            @RequestParam int page,
