@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 public class CreatedOrderBean {
     private LocalDateTime createdAt;
     private String orderNumber;
-    private double totalPaid;
+    private String totalPaid;
     private String status;
 
 }
