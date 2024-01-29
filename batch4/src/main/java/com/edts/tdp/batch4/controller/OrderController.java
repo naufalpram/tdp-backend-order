@@ -2,6 +2,7 @@ package com.edts.tdp.batch4.controller;
 
 import com.edts.tdp.batch4.bean.BaseResponseBean;
 import com.edts.tdp.batch4.model.OrderHeader;
+import com.edts.tdp.batch4.service.OrderLogicService;
 import com.edts.tdp.batch4.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -19,10 +20,23 @@ public class OrderController {
     @Autowired
     OrderService orderService;
 
+    @Autowired
+    OrderLogicService orderLogicService;
+
     @GetMapping("/get-history")
     public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrders(@RequestParam Long customerId, @RequestParam int page, @RequestParam int size) {
         BaseResponseBean<Page<OrderHeader>> response;
         response = orderService.getAllOrderByCustomerId(customerId, page, size);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/get-history")
+    public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrdersByStatus(@RequestParam long customerId,
+                                                                           @RequestParam String status,
+                                                                           @RequestParam int page,
+                                                                           @RequestParam int size) {
+        BaseResponseBean<Page<OrderHeader>> responseBean;
+        responseBean = orderService.findAllByCustomerIdAndStatus(customerId, status, page, size);
+        return new ResponseEntity<>(responseBean, HttpStatus.OK);
     }
 }

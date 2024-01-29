@@ -57,4 +57,26 @@ public class OrderService {
         }
         return response;
     }
+    public BaseResponseBean<Page<OrderHeader>> findAllByCustomerIdAndStatus(long customerId,
+                                                          String status,
+                                                          int page,
+                                                          int size) {
+        String path = "/get-history";
+        Pageable pageable = PageRequest.of(page,size, Sort.by("createdAt").descending());
+        BaseResponseBean<Page<OrderHeader>> response = new BaseResponseBean<>();
+        if ( customerId < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+        if ( page < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Page Number", path);
+        Page<OrderHeader> headerData = orderHeaderRepository.findAllByCustomerIdAndStatus(customerId,status,pageable);
+
+        if ( headerData.isEmpty() ) {
+            throw new OrderCustomException(HttpStatus.NO_CONTENT, "No Content Data", path);
+        } else {
+            response.setStatus(HttpStatus.OK);
+            response.setData(headerData);
+            response.setMessage("Success");
+            response.setCode(200);
+            response.setTimestamp(LocalDateTime.now());
+        }
+        return response;
+    }
 }
