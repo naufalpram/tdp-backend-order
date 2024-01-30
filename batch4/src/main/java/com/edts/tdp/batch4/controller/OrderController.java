@@ -3,6 +3,7 @@ package com.edts.tdp.batch4.controller;
 import com.edts.tdp.batch4.bean.BaseResponseBean;
 import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
+import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
 import com.edts.tdp.batch4.model.OrderHeader;
 import com.edts.tdp.batch4.service.OrderLogicService;
 import com.edts.tdp.batch4.service.OrderService;
@@ -71,7 +72,15 @@ public class OrderController {
     public ResponseEntity<BaseResponseBean<CreatedOrderBean>> returnOrder(@RequestParam String orderNumber,
                                                                           HttpServletRequest httpServletRequest) throws JsonProcessingException {
         BaseResponseBean<CreatedOrderBean> response;
-        response = orderService.returnOrder(orderNumber, httpServletRequest);
+        response = orderService.returnOrder(customerId, orderNumber);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/detail")
+    public ResponseEntity<BaseResponseBean<FullOrderInfoBean>> getFullOrderInfo(@RequestParam Long customerId,
+                                                                                @RequestParam String orderNumber) {
+        BaseResponseBean<FullOrderInfoBean> response;
+        response = orderService.getFullOrderInfo(customerId, orderNumber);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
