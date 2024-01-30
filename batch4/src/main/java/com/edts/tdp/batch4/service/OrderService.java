@@ -51,7 +51,7 @@ public class OrderService {
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
         DecimalFormat priceFormat = new DecimalFormat("#.##");
         DecimalFormat distanceFormat = new DecimalFormat("#.00");
-        //double distance = OrderLogicService.distanceCounter(-6.175205678775132, 106.82715894445303);
+
         OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
         OrderCustomerAddress orderCustomerAddress = OrderLogicService.getCustomerAddress(orderCustomerInfo);
 
@@ -84,7 +84,7 @@ public class OrderService {
             orderDetail.setProductId(item.getProductId());
             orderDetail.setPrice(item.getPrice());
             orderDetail.setQty(item.getQty());
-            orderDetail.setCreatedBy("amini");
+            orderDetail.setCreatedBy(orderCustomerInfo.getUsername());
             orderDetail.setOrderHeader(tempOrderHeader);
 
             arr.add(orderDetail);
@@ -112,10 +112,13 @@ public class OrderService {
         return response;
     }
 
-    public BaseResponseBean<Page<OrderHeader>> getAllOrderByCustomerId(Long customerId, int page, int size) {
+    public BaseResponseBean<Page<OrderHeader>> getAllOrderByCustomerId(int page, int size, HttpServletRequest httpServletRequest) throws JsonProcessingException {
         String path = "/order/get-history";
         BaseResponseBean<Page<OrderHeader>> response = new BaseResponseBean<>();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        long customerId = orderCustomerInfo.getId();
 
         if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST,
                 "Customer id must be a positive integer", path);
@@ -137,13 +140,17 @@ public class OrderService {
         }
         return response;
     }
-    public BaseResponseBean<Page<OrderHeader>> findAllByCustomerIdAndStatus(long customerId,
-                                                          String status,
-                                                          int page,
-                                                          int size) {
+    public BaseResponseBean<Page<OrderHeader>> findAllByCustomerIdAndStatus(String status,
+                                                                            int page,
+                                                                            int size,
+                                                                            HttpServletRequest httpServletRequest) throws JsonProcessingException {
         String path = "/get-history/filter";
         Pageable pageable = PageRequest.of(page,size, Sort.by("createdAt").descending());
         BaseResponseBean<Page<OrderHeader>> response = new BaseResponseBean<>();
+
+        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        long customerId = orderCustomerInfo.getId();
+
         if ( customerId < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
         if ( page < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Page Number", path);
         Page<OrderHeader> headerData = orderHeaderRepository.findAllByCustomerIdAndStatus(customerId,status,pageable);
@@ -160,8 +167,11 @@ public class OrderService {
         return response;
     }
 
-    public BaseResponseBean<CreatedOrderBean> sendOrder(long customerId,
-                                                                  String orderNumber) {
+    public BaseResponseBean<CreatedOrderBean> sendOrder(String orderNumber, HttpServletRequest httpServletRequest) throws JsonProcessingException {
+
+        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        long customerId = orderCustomerInfo.getId();
+
         String path = "/update/sent";
         BaseResponseBean<CreatedOrderBean> orderBean = new BaseResponseBean<>();
         if ( customerId < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
@@ -190,10 +200,12 @@ public class OrderService {
         return orderBean;
     }
 
-    public BaseResponseBean<CreatedOrderBean> cancelOrder(long customerId,
-                                                     String orderNumber) {
+    public BaseResponseBean<CreatedOrderBean> cancelOrder(String orderNumber, HttpServletRequest httpServletRequest) throws JsonProcessingException {
         String path = "update/cancel";
         BaseResponseBean<CreatedOrderBean> orderBean = new BaseResponseBean<>();
+
+        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        long customerId = orderCustomerInfo.getId();
 
         if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
 
@@ -227,10 +239,12 @@ public class OrderService {
         return orderBean;
     }
 
-    public BaseResponseBean<CreatedOrderBean> returnOrder(long customerId,
-                                                          String orderNumber) {
+    public BaseResponseBean<CreatedOrderBean> returnOrder(String orderNumber, HttpServletRequest httpServletRequest) throws JsonProcessingException {
         String path = "update/return";
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
+
+        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        long customerId = orderCustomerInfo.getId();
 
         if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
 
