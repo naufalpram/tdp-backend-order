@@ -112,86 +112,88 @@ public class OrderService {
         return response;
     }
 
-    public BaseResponseBean<Page<OrderHeader>> getAllOrderByCustomerId(Long customerId, int page, int size) {
-        String path = "/order/get-history";
-        BaseResponseBean<Page<OrderHeader>> response = new BaseResponseBean<>();
+    public BaseResponseBean<Page<CreatedOrderBean>> getAllOrderByCustomerId(Long customerId, int page, int size) {
+        String path = "/get-history";
+        BaseResponseBean<Page<CreatedOrderBean>> response = new BaseResponseBean<>();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
-        if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST,
-                "Customer id must be a positive integer", path);
-        if (page < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST,
-                "Invalid page: must be a 0 or a positive int", path);
+        if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+        if (page < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid page: must be a 0 or a positive int", path);
 
         // get all orderHeader
-        Page<OrderHeader> orders = this.orderHeaderRepository.findAllByCustomerId(customerId, pageable);
-
+        Page<CreatedOrderBean> orders = this.orderHeaderRepository.findAllByCustomerId(customerId, pageable);
         if (orders.isEmpty())
             throw new OrderCustomException(HttpStatus.NOT_FOUND,
                     String.format("Order history request with customerId: %d is empty", customerId), path);
-        else {
-            response.setStatus(HttpStatus.OK);
-            response.setCode(200);
-            response.setMessage(HttpStatus.OK.getReasonPhrase());
-            response.setData(orders);
-            response.setTimestamp(LocalDateTime.now());
-        }
+
+        response.setStatus(HttpStatus.OK);
+        response.setCode(200);
+        response.setMessage(HttpStatus.OK.getReasonPhrase());
+        response.setData(orders);
+        response.setTimestamp(LocalDateTime.now());
         return response;
     }
-    public BaseResponseBean<Page<OrderHeader>> findAllByCustomerIdAndStatus(long customerId,
-                                                          String status,
-                                                          int page,
-                                                          int size) {
-        String path = "/get-history/filter";
-        Pageable pageable = PageRequest.of(page,size, Sort.by("createdAt").descending());
-        BaseResponseBean<Page<OrderHeader>> response = new BaseResponseBean<>();
-        if ( customerId < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
-        if ( page < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Page Number", path);
-        Page<OrderHeader> headerData = orderHeaderRepository.findAllByCustomerIdAndStatus(customerId,status,pageable);
 
-        if ( headerData.isEmpty() ) {
+    public BaseResponseBean<Page<CreatedOrderBean>> findAllByCustomerIdAndStatus(long customerId,
+                                                                            String status,
+                                                                            int page,
+                                                                            int size) {
+        String path = "/get-history/filter";
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        BaseResponseBean<Page<CreatedOrderBean>> response = new BaseResponseBean<>();
+
+        if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+        if (page < 0)
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid page: must be a 0 or a positive int", path);
+
+        Page<CreatedOrderBean> headerData = this.orderHeaderRepository.findAllByCustomerIdAndStatus(customerId, status, pageable);
+        if (headerData.isEmpty()) {
             throw new OrderCustomException(HttpStatus.NO_CONTENT, "No Content Data", path);
-        } else {
+        }
             response.setStatus(HttpStatus.OK);
             response.setData(headerData);
             response.setMessage("Success");
             response.setCode(200);
             response.setTimestamp(LocalDateTime.now());
-        }
-        return response;
+            return response;
     }
 
-    public BaseResponseBean<CreatedOrderBean> sendOrder(long customerId,
-                                                                  String orderNumber) {
+    public BaseResponseBean<CreatedOrderBean> sendOrder(long customerId, String orderNumber) {
         String path = "/update/sent";
         BaseResponseBean<CreatedOrderBean> orderBean = new BaseResponseBean<>();
-        if ( customerId < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
-        Optional<OrderHeader> headerData = orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
-        if ( headerData.isEmpty() ) {
-            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With Order Number: %s is not found",orderNumber), path);
-        } else {
-            OrderHeader orderHeader = headerData.get();
-            if ( !orderHeader.getStatus().equals(Status.ORDERED) ) {
-                throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Order Number" + "Order : " + orderHeader.getStatus(), path);
-            }
-            orderHeader.setStatus(Status.SENT);
-            orderHeader.setModifiedAt(LocalDateTime.now());
-            orderHeader.setModifiedBy("Admin");
-            orderHeader = orderHeaderRepository.save(orderHeader);
-            CreatedOrderBean createdOrderBean = new CreatedOrderBean();
-            createdOrderBean.setStatus(Status.SENT);
-            createdOrderBean.setOrderNumber(orderNumber);
-            createdOrderBean.setModifiedAt(LocalDateTime.now());
-            orderBean.setStatus(HttpStatus.OK);
-            orderBean.setData(createdOrderBean);
-            orderBean.setMessage(HttpStatus.OK.getReasonPhrase());
-            orderBean.setCode(200);
-            orderBean.setTimestamp(LocalDateTime.now());
+
+        if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+
+        Optional<OrderHeader> headerData = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
+        if (headerData.isEmpty())
+            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With Order Number: %s is not found", orderNumber), path);
+
+        OrderHeader orderHeader = headerData.get();
+        if (!orderHeader.getStatus().equals(Status.ORDERED)) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Can not send order with status : " + orderHeader.getStatus(), path);
         }
+        orderHeader.setStatus(Status.SENT);
+        orderHeader.setModifiedAt(LocalDateTime.now());
+        orderHeader.setModifiedBy("Admin");
+        this.orderHeaderRepository.save(orderHeader);
+
+        CreatedOrderBean createdOrderBean = new CreatedOrderBean();
+        createdOrderBean.setStatus(Status.SENT);
+        createdOrderBean.setOrderNumber(orderNumber);
+        createdOrderBean.setCreatedAt(orderHeader.getCreatedAt());
+        createdOrderBean.setModifiedAt(LocalDateTime.now());
+
+        orderBean.setStatus(HttpStatus.OK);
+        orderBean.setData(createdOrderBean);
+        orderBean.setMessage(HttpStatus.OK.getReasonPhrase());
+        orderBean.setCode(200);
+        orderBean.setTimestamp(LocalDateTime.now());
+
         return orderBean;
     }
 
     public BaseResponseBean<CreatedOrderBean> cancelOrder(long customerId,
-                                                     String orderNumber) {
+                                                          String orderNumber) {
         String path = "update/cancel";
         BaseResponseBean<CreatedOrderBean> orderBean = new BaseResponseBean<>();
 
@@ -236,7 +238,7 @@ public class OrderService {
 
         Optional<OrderHeader> orderHeaderData = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
         if (orderHeaderData.isEmpty())
-            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With Order Number: %s is not found", orderNumber), path);
+            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With order number: %s is not found", orderNumber), path);
 
         OrderHeader orderHeader = orderHeaderData.get();
         if (!orderHeader.getStatus().equals(Status.DELIVERED))
@@ -257,6 +259,49 @@ public class OrderService {
 
         response.setStatus(HttpStatus.OK);
         response.setData(createdOrderBean);
+        response.setMessage(HttpStatus.OK.getReasonPhrase());
+        response.setCode(200);
+        response.setTimestamp(LocalDateTime.now());
+        return response;
+    }
+
+    public BaseResponseBean<FullOrderInfoBean> getFullOrderInfo(Long customerId, String orderNumber) {
+        String path = "/detail";
+        BaseResponseBean<FullOrderInfoBean> response = new BaseResponseBean<>();
+        if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+
+        Optional<OrderHeader> orderHeader = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
+        if (orderHeader.isEmpty())
+            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With order number: %s is not found", orderNumber), path);
+
+        OrderHeader data = orderHeader.get();
+        FullOrderInfoBean infoBean = new FullOrderInfoBean();
+        infoBean.setId(data.getId());
+        infoBean.setCreatedAt(data.getCreatedAt());
+        infoBean.setCustomerId(data.getCustomerId());
+        infoBean.setOrderNumber(data.getOrderNumber());
+        infoBean.setTotalPaid(String.format("%.2f", data.getTotalPaid()));
+        infoBean.setStatus(data.getStatus());
+        infoBean.setStreet(data.getOrderDelivery().getStreet());
+        infoBean.setProvince(data.getOrderDelivery().getProvince());
+        infoBean.setPostalCode(data.getOrderDelivery().getPostCode());
+        infoBean.setDistanceInKm(data.getOrderDelivery().getDistanceInKm());
+
+        List<OrderDetail> orderDetailList = data.getOrderDetailList();
+        List<OrderDetailBean> detailsBean = new ArrayList<>();
+        for (OrderDetail item : orderDetailList) {
+            OrderDetailBean orderDetailBean = new OrderDetailBean();
+            orderDetailBean.setId(item.getId());
+            orderDetailBean.setProductId(item.getProductId());
+            orderDetailBean.setQty(item.getQty());
+            orderDetailBean.setPrice(String.format("%.2f", item.getPrice()));
+            orderDetailBean.setProductImage("placeholder image");
+            detailsBean.add(orderDetailBean);
+        }
+        infoBean.setOrderDetailList(detailsBean);
+
+        response.setStatus(HttpStatus.OK);
+        response.setData(infoBean);
         response.setMessage(HttpStatus.OK.getReasonPhrase());
         response.setCode(200);
         response.setTimestamp(LocalDateTime.now());
