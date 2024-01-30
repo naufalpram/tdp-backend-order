@@ -5,6 +5,7 @@ import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
 import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
 import com.edts.tdp.batch4.service.OrderService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -25,9 +26,9 @@ public class OrderController {
     OrderService orderService;
 
     @PostMapping("/create")
-    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(@RequestBody List<RequestProductBean> body){
+    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(@RequestBody List<RequestProductBean> body, HttpServletRequest httpServletRequest) throws JsonProcessingException {
         BaseResponseBean<CreatedOrderBean> response;
-        response = orderService.createOrder(body);
+        response = orderService.createOrder(body, httpServletRequest);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
