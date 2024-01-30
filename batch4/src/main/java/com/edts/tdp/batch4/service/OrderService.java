@@ -4,6 +4,8 @@ import com.edts.tdp.batch4.bean.BaseResponseBean;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
+import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
+import com.edts.tdp.batch4.bean.response.OrderDetailBean;
 import com.edts.tdp.batch4.constant.Status;
 import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.exception.OrderCustomException;
@@ -101,7 +103,7 @@ public class OrderService {
         CreatedOrderBean orderBean = new CreatedOrderBean();
         orderBean.setCreatedAt(tempOrderHeader.getCreatedAt());
         orderBean.setOrderNumber(tempOrderHeader.getOrderNumber());
-        orderBean.setTotalPaid(String.format("%3f", tempOrderHeader.getTotalPaid()));
+        orderBean.setTotalPaid(String.format("%.2f", tempOrderHeader.getTotalPaid()));
         orderBean.setStatus(tempOrderHeader.getStatus());
 
         response.setTimestamp(LocalDateTime.now());
@@ -259,6 +261,49 @@ public class OrderService {
 
         response.setStatus(HttpStatus.OK);
         response.setData(createdOrderBean);
+        response.setMessage(HttpStatus.OK.getReasonPhrase());
+        response.setCode(200);
+        response.setTimestamp(LocalDateTime.now());
+        return response;
+    }
+
+    public BaseResponseBean<FullOrderInfoBean> getFullOrderInfo(Long customerId, String orderNumber) {
+        String path = "/detail";
+        BaseResponseBean<FullOrderInfoBean> response = new BaseResponseBean<>();
+        if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+
+        Optional<OrderHeader> orderHeader = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
+        if (orderHeader.isEmpty())
+            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With order number: %s is not found", orderNumber), path);
+
+        OrderHeader data = orderHeader.get();
+        FullOrderInfoBean infoBean = new FullOrderInfoBean();
+        infoBean.setId(data.getId());
+        infoBean.setCreatedAt(data.getCreatedAt());
+        infoBean.setCustomerId(data.getCustomerId());
+        infoBean.setOrderNumber(data.getOrderNumber());
+        infoBean.setTotalPaid(String.format("%.2f", data.getTotalPaid()));
+        infoBean.setStatus(data.getStatus());
+        infoBean.setStreet(data.getOrderDelivery().getStreet());
+        infoBean.setProvince(data.getOrderDelivery().getProvince());
+        infoBean.setPostalCode(data.getOrderDelivery().getPostCode());
+        infoBean.setDistanceInKm(data.getOrderDelivery().getDistanceInKm());
+
+        List<OrderDetail> orderDetailList = data.getOrderDetailList();
+        List<OrderDetailBean> detailsBean = new ArrayList<>();
+        for (OrderDetail item : orderDetailList) {
+            OrderDetailBean orderDetailBean = new OrderDetailBean();
+            orderDetailBean.setId(item.getId());
+            orderDetailBean.setProductId(item.getProductId());
+            orderDetailBean.setQty(item.getQty());
+            orderDetailBean.setPrice(String.format("%.2f", item.getPrice()));
+            orderDetailBean.setProductImage("placeholder image");
+            detailsBean.add(orderDetailBean);
+        }
+        infoBean.setOrderDetailList(detailsBean);
+
+        response.setStatus(HttpStatus.OK);
+        response.setData(infoBean);
         response.setMessage(HttpStatus.OK.getReasonPhrase());
         response.setCode(200);
         response.setTimestamp(LocalDateTime.now());
