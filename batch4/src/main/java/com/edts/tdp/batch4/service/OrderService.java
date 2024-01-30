@@ -194,30 +194,72 @@ public class OrderService {
                                                      String orderNumber) {
         String path = "update/cancel";
         BaseResponseBean<CreatedOrderBean> orderBean = new BaseResponseBean<>();
-        if ( customerId < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
-        Optional<OrderHeader> headerData = orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
-        if ( headerData.isEmpty() ) {
-            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With Order Number: %s is not found",orderNumber), path);
-        } else {
-            OrderHeader orderHeader = headerData.get();
-            if ( !orderHeader.getStatus().equals(Status.ORDERED)) {
-                throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Order Can't Cancel" + " Order : " + orderHeader.getStatus(), path);
-            } else {
-                orderHeader.setStatus(Status.CANCELLED);
-                orderHeader.setModifiedAt(LocalDateTime.now());
-                orderHeader.setModifiedBy("Admin");
-                orderHeader = orderHeaderRepository.save(orderHeader);
-                CreatedOrderBean createdOrderBean = new CreatedOrderBean();
-                createdOrderBean.setStatus(Status.CANCELLED);
-                createdOrderBean.setOrderNumber(orderNumber);
-                createdOrderBean.setModifiedAt(LocalDateTime.now());
-                orderBean.setStatus(HttpStatus.OK);
-                orderBean.setData(createdOrderBean);
-                orderBean.setMessage(HttpStatus.OK.getReasonPhrase());
-                orderBean.setCode(200);
-                orderBean.setTimestamp(LocalDateTime.now());
-            }
-        }
+
+        if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+
+        Optional<OrderHeader> headerData = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
+        if (headerData.isEmpty())
+            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With Order Number: %s is not found", orderNumber), path);
+
+        OrderHeader orderHeader = headerData.get();
+        if (!orderHeader.getStatus().equals(Status.ORDERED))
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Can not cancel order with status: " + orderHeader.getStatus(), path);
+        if (orderHeader.getOrderDelivery().isDelivered())
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Can not cancel a delivered order", path);
+
+
+        orderHeader.setStatus(Status.CANCELLED);
+        orderHeader.setModifiedAt(LocalDateTime.now());
+        orderHeader.setModifiedBy(orderHeader.getCreatedBy());
+        this.orderHeaderRepository.save(orderHeader);
+
+        CreatedOrderBean createdOrderBean = new CreatedOrderBean();
+        createdOrderBean.setStatus(Status.CANCELLED);
+        createdOrderBean.setOrderNumber(orderNumber);
+        createdOrderBean.setCreatedAt(orderHeader.getCreatedAt());
+        createdOrderBean.setModifiedAt(LocalDateTime.now());
+
+        orderBean.setStatus(HttpStatus.OK);
+        orderBean.setData(createdOrderBean);
+        orderBean.setMessage(HttpStatus.OK.getReasonPhrase());
+        orderBean.setCode(200);
+        orderBean.setTimestamp(LocalDateTime.now());
         return orderBean;
+    }
+
+    public BaseResponseBean<CreatedOrderBean> returnOrder(long customerId,
+                                                          String orderNumber) {
+        String path = "update/return";
+        BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
+
+        if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+
+        Optional<OrderHeader> orderHeaderData = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
+        if (orderHeaderData.isEmpty())
+            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With Order Number: %s is not found", orderNumber), path);
+
+        OrderHeader orderHeader = orderHeaderData.get();
+        if (!orderHeader.getStatus().equals(Status.DELIVERED))
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Can not return order with status: %s" + orderHeader.getStatus(), path);
+        if (!orderHeader.getOrderDelivery().isDelivered())
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Can not return an order that is not yet delivered", path);
+
+        orderHeader.setStatus(Status.RETURNED);
+        orderHeader.setModifiedAt(LocalDateTime.now());
+        orderHeader.setModifiedBy(orderHeader.getCreatedBy());
+        this.orderHeaderRepository.save(orderHeader);
+
+        CreatedOrderBean createdOrderBean = new CreatedOrderBean();
+        createdOrderBean.setStatus(Status.RETURNED);
+        createdOrderBean.setOrderNumber(orderNumber);
+        createdOrderBean.setCreatedAt(orderHeader.getCreatedAt());
+        createdOrderBean.setModifiedAt(LocalDateTime.now());
+
+        response.setStatus(HttpStatus.OK);
+        response.setData(createdOrderBean);
+        response.setMessage(HttpStatus.OK.getReasonPhrase());
+        response.setCode(200);
+        response.setTimestamp(LocalDateTime.now());
+        return response;
     }
 }
