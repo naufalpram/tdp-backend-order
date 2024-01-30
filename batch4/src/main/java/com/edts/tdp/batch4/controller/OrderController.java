@@ -4,11 +4,14 @@ import com.edts.tdp.batch4.bean.BaseResponseBean;
 import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
 import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
-import com.edts.tdp.batch4.model.OrderHeader;
 import com.edts.tdp.batch4.service.OrderService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -77,5 +80,19 @@ public class OrderController {
         BaseResponseBean<FullOrderInfoBean> response;
         response = orderService.getFullOrderInfo(customerId, orderNumber);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/get-invoice/{orderNumber}")
+    public ResponseEntity<BaseResponseBean<ClassPathResource>> getOrderInvoice(@PathVariable String orderNumber, HttpServletRequest httpServletRequest) {
+        BaseResponseBean<ClassPathResource> response = new BaseResponseBean<>();
+
+        // Build the response headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=sample.csv");
+        headers.setContentType(MediaType.TEXT_PLAIN);
+//        headers.setContentLength(resource.contentLength());
+
+
+        return new ResponseEntity<>(response, headers, HttpStatus.OK);
     }
 }
