@@ -34,20 +34,20 @@ public class OrderController {
     }
 
     @GetMapping("/get-history")
-    public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrders(@RequestParam int page,
+    public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrders(@RequestParam int page,
                                                                             @RequestParam int size,
                                                                             HttpServletRequest httpServletRequest) throws JsonProcessingException {
-        BaseResponseBean<Page<OrderHeader>> response;
+        BaseResponseBean<Page<CreatedOrderBean>> response;
         response = orderService.getAllOrderByCustomerId(page, size, httpServletRequest);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/get-history/filter")
-    public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrdersByStatus(@RequestParam String status,
+    public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrdersByStatus(@RequestParam String status,
                                                                                     @RequestParam int page,
                                                                                     @RequestParam int size,
                                                                                     HttpServletRequest httpServletRequest) throws JsonProcessingException {
-        BaseResponseBean<Page<OrderHeader>> responseBean;
+        BaseResponseBean<Page<CreatedOrderBean>> responseBean;
         responseBean = orderService.findAllByCustomerIdAndStatus(status, page, size, httpServletRequest);
         return new ResponseEntity<>(responseBean, HttpStatus.OK);
     }
@@ -72,7 +72,7 @@ public class OrderController {
     public ResponseEntity<BaseResponseBean<CreatedOrderBean>> returnOrder(@RequestParam String orderNumber,
                                                                           HttpServletRequest httpServletRequest) throws JsonProcessingException {
         BaseResponseBean<CreatedOrderBean> response;
-        response = orderService.returnOrder(customerId, orderNumber);
+        response = orderService.returnOrder(orderNumber, httpServletRequest);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

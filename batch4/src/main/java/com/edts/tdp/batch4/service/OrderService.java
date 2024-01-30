@@ -114,16 +114,16 @@ public class OrderService {
         return response;
     }
 
-    public BaseResponseBean<Page<OrderHeader>> getAllOrderByCustomerId(int page, int size, HttpServletRequest httpServletRequest) throws JsonProcessingException {
+    public BaseResponseBean<Page<CreatedOrderBean>> getAllOrderByCustomerId(int page, int size, HttpServletRequest httpServletRequest) throws JsonProcessingException {
         String path = "/get-history";
-        BaseResponseBean<Page<OrderHeader>> response = new BaseResponseBean<>();
+        BaseResponseBean<Page<CreatedOrderBean>> response = new BaseResponseBean<>();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
         long customerId = orderCustomerInfo.getId();
 
         if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST,
-                "Customer id must be a positive integer", path);
+                "Invalid Customer Id", path);
         if (page < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST,
                 "Invalid page: must be a 0 or a positive int", path);
 
@@ -140,21 +140,18 @@ public class OrderService {
         response.setTimestamp(LocalDateTime.now());
         return response;
     }
-    public BaseResponseBean<Page<OrderHeader>> findAllByCustomerIdAndStatus(String status,
+    public BaseResponseBean<Page<CreatedOrderBean>> findAllByCustomerIdAndStatus(String status,
                                                                             int page,
                                                                             int size,
                                                                             HttpServletRequest httpServletRequest) throws JsonProcessingException {
         String path = "/get-history/filter";
         Pageable pageable = PageRequest.of(page,size, Sort.by("createdAt").descending());
-        BaseResponseBean<Page<OrderHeader>> response = new BaseResponseBean<>();
 
         OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
         long customerId = orderCustomerInfo.getId();
 
         if ( customerId < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
         if ( page < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Page Number", path);
-        Page<OrderHeader> headerData = orderHeaderRepository.findAllByCustomerIdAndStatus(customerId,status,pageable);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         BaseResponseBean<Page<CreatedOrderBean>> response = new BaseResponseBean<>();
 
         if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
