@@ -208,7 +208,7 @@ public class OrderService {
                 orderHeader.setModifiedBy("Admin");
                 orderHeader = orderHeaderRepository.save(orderHeader);
                 CreatedOrderBean createdOrderBean = new CreatedOrderBean();
-                createdOrderBean.setStatus(Status.SENT);
+                createdOrderBean.setStatus(Status.CANCELLED);
                 createdOrderBean.setOrderNumber(orderNumber);
                 createdOrderBean.setModifiedAt(LocalDateTime.now());
                 orderBean.setStatus(HttpStatus.OK);
