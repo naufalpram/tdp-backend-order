@@ -3,6 +3,7 @@ package com.edts.tdp.batch4.controller;
 import com.edts.tdp.batch4.bean.BaseResponseBean;
 import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
+import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
 import com.edts.tdp.batch4.model.OrderHeader;
 import com.edts.tdp.batch4.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,20 +29,20 @@ public class OrderController {
     }
 
     @GetMapping("/get-history")
-    public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrders(@RequestParam Long customerId,
+    public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrders(@RequestParam Long customerId,
                                                                             @RequestParam int page,
                                                                             @RequestParam int size) {
-        BaseResponseBean<Page<OrderHeader>> response;
+        BaseResponseBean<Page<CreatedOrderBean>> response;
         response = orderService.getAllOrderByCustomerId(customerId, page, size);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/get-history/filter")
-    public ResponseEntity<BaseResponseBean<Page<OrderHeader>>> getAllOrdersByStatus(@RequestParam long customerId,
+    public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrdersByStatus(@RequestParam long customerId,
                                                                            @RequestParam String status,
                                                                            @RequestParam int page,
                                                                            @RequestParam int size) {
-        BaseResponseBean<Page<OrderHeader>> responseBean;
+        BaseResponseBean<Page<CreatedOrderBean>> responseBean;
         responseBean = orderService.findAllByCustomerIdAndStatus(customerId, status, page, size);
         return new ResponseEntity<>(responseBean, HttpStatus.OK);
     }
@@ -67,6 +68,14 @@ public class OrderController {
                                                                           @RequestParam String orderNumber) {
         BaseResponseBean<CreatedOrderBean> response;
         response = orderService.returnOrder(customerId, orderNumber);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/detail")
+    public ResponseEntity<BaseResponseBean<FullOrderInfoBean>> getFullOrderInfo(@RequestParam Long customerId,
+                                                                                @RequestParam String orderNumber) {
+        BaseResponseBean<FullOrderInfoBean> response;
+        response = orderService.getFullOrderInfo(customerId, orderNumber);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
