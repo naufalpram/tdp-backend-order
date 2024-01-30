@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.List;
 
 @RestController
@@ -83,17 +86,17 @@ public class OrderController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping("/get-invoice/{orderNumber}")
-    public ResponseEntity<BaseResponseBean<ClassPathResource>> getOrderInvoice(@PathVariable String orderNumber, HttpServletRequest httpServletRequest) {
-        BaseResponseBean<ClassPathResource> response = new BaseResponseBean<>();
+    @GetMapping("/generate-report/{status}")
+    public ResponseEntity<?> generateOrderReport(@PathVariable String status) throws IOException {
+        try {
+            StringWriter stringWriter = orderService.generateCsvReport(status);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"report.csv\"")
+                    .body(stringWriter.toString());
 
-        // Build the response headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=sample.csv");
-        headers.setContentType(MediaType.TEXT_PLAIN);
-//        headers.setContentLength(resource.contentLength());
-
-
-        return new ResponseEntity<>(response, headers, HttpStatus.OK);
+        }catch (Exception e){
+            System.out.println(e.getMessage());
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 }

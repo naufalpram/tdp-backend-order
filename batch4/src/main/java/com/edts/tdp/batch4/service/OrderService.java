@@ -23,6 +23,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -308,5 +310,20 @@ public class OrderService {
         response.setCode(200);
         response.setTimestamp(LocalDateTime.now());
         return response;
+    }
+
+    public StringWriter generateCsvReport(String status) {
+        String path = "/generate-report";
+        try {
+            List<OrderHeader> allOrder;
+            if (status.equals("all")) {
+                allOrder = this.orderHeaderRepository.findAll(Sort.by("createdAt").descending());
+            } else {
+                allOrder = this.orderHeaderRepository.findAllByStatus(status, Sort.by("createdAt").descending());
+            }
+            return OrderLogicService.createCsv(allOrder);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), path);
+        }
     }
 }

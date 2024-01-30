@@ -4,7 +4,10 @@ import com.edts.tdp.batch4.constant.DeliveryFeeMultiplier;
 import com.edts.tdp.batch4.constant.StaticGeoLocation;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
+import com.edts.tdp.batch4.model.OrderDelivery;
+import com.edts.tdp.batch4.model.OrderHeader;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.opencsv.CSVWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -13,6 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.client.RestTemplate;
+
+import java.io.StringWriter;
+import java.util.List;
 
 @Service
 public class OrderLogicService {
@@ -68,5 +74,40 @@ public class OrderLogicService {
     public static OrderCustomerAddress getCustomerAddress(OrderCustomerInfo orderCustomerInfo) {
         OrderCustomerAddress orderCustomerAddress = orderCustomerInfo.getAddress();
         return orderCustomerAddress;
+    }
+
+    public static StringWriter createCsv(List<OrderHeader> orders) {
+        OrderDelivery defaultDelivery = new OrderDelivery();
+        defaultDelivery.setDistanceInKm(199);
+        defaultDelivery.setStreet("Jl. Pegangsaan Timur no.99, Sudirman");
+        defaultDelivery.setProvince("DKI Jakarta");
+
+        StringWriter stringWriter = new StringWriter();
+
+        CSVWriter csvWriter = new CSVWriter(stringWriter,';'
+                ,CSVWriter.NO_QUOTE_CHARACTER,CSVWriter.DEFAULT_ESCAPE_CHARACTER
+                ,CSVWriter.DEFAULT_LINE_END);
+
+        final String CSV_HEADER = "Order Id,Order Number,Nama Customer,Alamat,Jarak,Total Pembayaran,Status";
+        csvWriter.writeNext(CSV_HEADER.split(","));
+
+        for(OrderHeader orderHeader:orders){
+            OrderDelivery delivery = orderHeader.getOrderDelivery() == null ? defaultDelivery : orderHeader.getOrderDelivery();
+            String orderNumber = orderHeader.getOrderNumber() == null ? "" : orderHeader.getOrderNumber();
+            String street = delivery.getStreet() == null ? "" : delivery.getStreet();
+            String province = delivery.getProvince() == null ? "" : delivery.getProvince();
+
+            String address = String.format("%s, %s", street, province);
+            String distance = String.format("%.2f", delivery.getDistanceInKm());
+            String totalPaid = String.format("%.2f", orderHeader.getTotalPaid());
+            csvWriter.writeNext(new String[]{
+                    String.valueOf(orderHeader.getId()), orderNumber,
+                    "dummy", address, distance, totalPaid, orderHeader.getStatus()
+            });
+        }
+
+        stringWriter.flush();
+
+        return stringWriter;
     }
 }
