@@ -141,7 +141,7 @@ public class OrderService {
                                                           String status,
                                                           int page,
                                                           int size) {
-        String path = "/get-history";
+        String path = "/get-history/filter";
         Pageable pageable = PageRequest.of(page,size, Sort.by("createdAt").descending());
         BaseResponseBean<Page<OrderHeader>> response = new BaseResponseBean<>();
         if ( customerId < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
