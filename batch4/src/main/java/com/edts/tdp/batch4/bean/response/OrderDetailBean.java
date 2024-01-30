@@ -8,4 +8,5 @@ public class OrderDetailBean {
     private Long productId;
     private int qty;
     private String price;
+    private String productImage;
 }

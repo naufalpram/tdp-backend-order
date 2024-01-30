@@ -36,6 +36,9 @@ public class OrderDelivery {
     @Column(nullable = false)
     private String province;
 
+    @Column(name = "post_code")
+    private String postCode;
+
     @Column(name = "distance_in_km", nullable = false)
     private double distanceInKm;
 

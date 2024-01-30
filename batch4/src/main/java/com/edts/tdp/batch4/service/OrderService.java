@@ -281,6 +281,10 @@ public class OrderService {
         infoBean.setOrderNumber(data.getOrderNumber());
         infoBean.setTotalPaid(String.format("%.2f", data.getTotalPaid()));
         infoBean.setStatus(data.getStatus());
+        infoBean.setStreet(data.getOrderDelivery().getStreet());
+        infoBean.setProvince(data.getOrderDelivery().getProvince());
+        infoBean.setPostalCode(data.getOrderDelivery().getPostCode());
+        infoBean.setDistanceInKm(data.getOrderDelivery().getDistanceInKm());
 
         List<OrderDetail> orderDetailList = data.getOrderDetailList();
         List<OrderDetailBean> detailsBean = new ArrayList<>();
@@ -290,6 +294,7 @@ public class OrderService {
             orderDetailBean.setProductId(item.getProductId());
             orderDetailBean.setQty(item.getQty());
             orderDetailBean.setPrice(String.format("%.2f", item.getPrice()));
+            orderDetailBean.setProductImage("placeholder image");
             detailsBean.add(orderDetailBean);
         }
         infoBean.setOrderDetailList(detailsBean);

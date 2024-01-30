@@ -13,5 +13,9 @@ public class FullOrderInfoBean {
     private String orderNumber;
     private String totalPaid;
     private String status;
+    private String street;
+    private String province;
+    private String postalCode;
+    private double distanceInKm;
     private List<OrderDetailBean> orderDetailList;
 }
