@@ -1,16 +1,18 @@
 package com.edts.tdp.batch4.service;
 
 import com.edts.tdp.batch4.bean.BaseResponseBean;
+import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
+import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
 import com.edts.tdp.batch4.constant.Status;
 import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.exception.OrderCustomException;
-import com.edts.tdp.batch4.model.OrderDelivery;
-import com.edts.tdp.batch4.model.OrderDetail;
-import com.edts.tdp.batch4.model.OrderHeader;
+import com.edts.tdp.batch4.model.*;
 import com.edts.tdp.batch4.repository.OrderDeliveryRepository;
 import com.edts.tdp.batch4.repository.OrderDetailRepository;
 import com.edts.tdp.batch4.repository.OrderHeaderRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,22 +43,23 @@ public class OrderService {
         this.orderDeliveryRepository = orderDeliveryRepository;
     }
 
-    public BaseResponseBean<CreatedOrderBean> createOrder(List<RequestProductBean> body) {
-        String path = "/create";
-        if (body.isEmpty()) {
+    public BaseResponseBean<CreatedOrderBean> createOrder(List<RequestProductBean> body, HttpServletRequest httpServletRequest) throws JsonProcessingException {
+        String path = "/order/create";
+        if(body.isEmpty()){
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body length can't be zero", path);
         }
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
         DecimalFormat priceFormat = new DecimalFormat("#.##");
         DecimalFormat distanceFormat = new DecimalFormat("#.00");
         //double distance = OrderLogicService.distanceCounter(-6.175205678775132, 106.82715894445303);
-        double distance = OrderLogicService.distanceCounter(-8.498191844703317, 140.4021760551087);
+        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        OrderCustomerAddress orderCustomerAddress = OrderLogicService.getCustomerAddress(orderCustomerInfo);
+
+        double distance = OrderLogicService.distanceCounter(orderCustomerAddress.getLatitude(), orderCustomerAddress.getLongitude());
 
         OrderHeader orderHeader = new OrderHeader();
-        orderHeader.setCustomerId(24L);
-        orderHeader.setCreatedBy("amini");
-        orderHeader.setTotalPaid(0.0);
-        orderHeader.setModifiedBy("amini dwi");
+        orderHeader.setCustomerId(orderCustomerInfo.getId());
+        orderHeader.setCreatedBy(orderCustomerInfo.getUsername());
         orderHeader.setTotalPaid(OrderLogicService.deliveryCost(distance));
         Optional<OrderHeader> cek = this.orderHeaderRepository.findByOrderNumber(orderHeader.getOrderNumber());
 
@@ -66,17 +69,17 @@ public class OrderService {
         OrderHeader tempOrderHeader = this.orderHeaderRepository.save(orderHeader);
 
         OrderDelivery orderDelivery = new OrderDelivery();
-        orderDelivery.setCreatedBy("amini");
-        orderDelivery.setStreet("jalan sudirman");
-        orderDelivery.setProvince("Jakarta Pusat");
+        orderDelivery.setCreatedBy(orderCustomerInfo.getUsername());
+        orderDelivery.setStreet(orderCustomerAddress.getStreet());
+        orderDelivery.setProvince(orderCustomerAddress.getProvince());
         orderDelivery.setDistanceInKm(Double.parseDouble(distanceFormat.format(distance)));
-        orderDelivery.setLatitude(-6.175205678775132);
-        orderDelivery.setLongitude(106.82715894445303);
-
+        orderDelivery.setLatitude(orderCustomerAddress.getLatitude());
+        orderDelivery.setLongitude(orderDelivery.getLongitude());
 
         ArrayList<OrderDetail> arr = new ArrayList<>();
         double totalPrice = 0.0;
-        for (RequestProductBean item : body) {
+        for (int i = 0; i < body.size(); i++) {
+            RequestProductBean item = body.get(i);
             OrderDetail orderDetail = new OrderDetail();
             orderDetail.setProductId(item.getProductId());
             orderDetail.setPrice(item.getPrice());
@@ -109,16 +112,16 @@ public class OrderService {
         return response;
     }
 
-    public BaseResponseBean<Page<OrderHeader>> getAllOrderByCustomerId(Long customerId, int page, int size) {
+    public BaseResponseBean<Page<CreatedOrderBean>> getAllOrderByCustomerId(Long customerId, int page, int size) {
         String path = "/get-history";
-        BaseResponseBean<Page<OrderHeader>> response = new BaseResponseBean<>();
+        BaseResponseBean<Page<CreatedOrderBean>> response = new BaseResponseBean<>();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
         if (page < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid page: must be a 0 or a positive int", path);
 
         // get all orderHeader
-        Page<OrderHeader> orders = this.orderHeaderRepository.findAllByCustomerId(customerId, pageable);
+        Page<CreatedOrderBean> orders = this.orderHeaderRepository.findAllByCustomerId(customerId, pageable);
         if (orders.isEmpty())
             throw new OrderCustomException(HttpStatus.NOT_FOUND,
                     String.format("Order history request with customerId: %d is empty", customerId), path);
@@ -131,19 +134,19 @@ public class OrderService {
         return response;
     }
 
-    public BaseResponseBean<Page<OrderHeader>> findAllByCustomerIdAndStatus(long customerId,
+    public BaseResponseBean<Page<CreatedOrderBean>> findAllByCustomerIdAndStatus(long customerId,
                                                                             String status,
                                                                             int page,
                                                                             int size) {
         String path = "/get-history/filter";
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        BaseResponseBean<Page<OrderHeader>> response = new BaseResponseBean<>();
+        BaseResponseBean<Page<CreatedOrderBean>> response = new BaseResponseBean<>();
 
         if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
         if (page < 0)
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid page: must be a 0 or a positive int", path);
 
-        Page<OrderHeader> headerData = this.orderHeaderRepository.findAllByCustomerIdAndStatus(customerId, status, pageable);
+        Page<CreatedOrderBean> headerData = this.orderHeaderRepository.findAllByCustomerIdAndStatus(customerId, status, pageable);
         if (headerData.isEmpty()) {
             throw new OrderCustomException(HttpStatus.NO_CONTENT, "No Content Data", path);
         }
@@ -235,7 +238,7 @@ public class OrderService {
 
         Optional<OrderHeader> orderHeaderData = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
         if (orderHeaderData.isEmpty())
-            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With Order Number: %s is not found", orderNumber), path);
+            throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With order number: %s is not found", orderNumber), path);
 
         OrderHeader orderHeader = orderHeaderData.get();
         if (!orderHeader.getStatus().equals(Status.DELIVERED))
