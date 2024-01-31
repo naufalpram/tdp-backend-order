@@ -49,7 +49,7 @@ public class OrderLogicService {
         }
     }
 
-    public static OrderCustomerInfo getCustomerInfo(HttpServletRequest httpServletRequest) throws JsonProcessingException {
+    public static OrderCustomerInfo getCustomerInfo(HttpServletRequest httpServletRequest, String path) {
         String authHeader = httpServletRequest.getHeader("Authorization");
         String token = authHeader.substring(7);
         String url = "https://teaching-careful-lioness.ngrok-free.app/api/v1/customer/customer_info";
@@ -65,10 +65,15 @@ public class OrderLogicService {
                                                                 String.class);
         if ( response.getStatusCode().equals(HttpStatus.OK)) {
             ObjectMapper objectMapper = new ObjectMapper();
-            OrderCustomerInfo orderCustomerInfo = objectMapper.readValue(response.getBody(), OrderCustomerInfo.class);
+            OrderCustomerInfo orderCustomerInfo = null;
+            try {
+                orderCustomerInfo = objectMapper.readValue(response.getBody(), OrderCustomerInfo.class);
+            } catch (JsonProcessingException e) {
+                throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), path);
+            }
             return orderCustomerInfo;
         }
-        throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", "CustomerId");
+        throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
     }
 
     public static OrderCustomerAddress getCustomerAddress(OrderCustomerInfo orderCustomerInfo) {
