@@ -77,37 +77,44 @@ public class OrderLogicService {
     }
 
     public static StringWriter createCsv(List<OrderHeader> orders) {
-        OrderDelivery defaultDelivery = new OrderDelivery();
-        defaultDelivery.setDistanceInKm(199);
-        defaultDelivery.setStreet("Jl. Pegangsaan Timur no.99, Sudirman");
-        defaultDelivery.setProvince("DKI Jakarta");
-
         StringWriter stringWriter = new StringWriter();
 
         CSVWriter csvWriter = new CSVWriter(stringWriter,';'
                 ,CSVWriter.NO_QUOTE_CHARACTER,CSVWriter.DEFAULT_ESCAPE_CHARACTER
                 ,CSVWriter.DEFAULT_LINE_END);
 
-        final String CSV_HEADER = "Order Id,Order Number,Nama Customer,Alamat,Jarak,Total Pembayaran,Status";
+        final String CSV_HEADER = "Order Id,Order Number,Username,Alamat,Jarak,Total Pembayaran,Status";
         csvWriter.writeNext(CSV_HEADER.split(","));
 
         for(OrderHeader orderHeader:orders){
-            OrderDelivery delivery = orderHeader.getOrderDelivery() == null ? defaultDelivery : orderHeader.getOrderDelivery();
             String orderNumber = orderHeader.getOrderNumber() == null ? "" : orderHeader.getOrderNumber();
-            String street = delivery.getStreet() == null ? "" : delivery.getStreet();
-            String province = delivery.getProvince() == null ? "" : delivery.getProvince();
+            OrderDelivery checked = checkOrderDelivery(orderHeader.getOrderDelivery());
 
-            String address = String.format("%s, %s", street, province);
-            String distance = String.format("%.2f", delivery.getDistanceInKm());
+            String address = checked.getStreet().isEmpty() || checked.getProvince().isEmpty() ? "Incomplete Address"
+                    : String.format("%s, %s", checked.getStreet(), checked.getProvince());
+            String distance = String.format("%.2f", checked.getDistanceInKm());
             String totalPaid = String.format("%.2f", orderHeader.getTotalPaid());
             csvWriter.writeNext(new String[]{
                     String.valueOf(orderHeader.getId()), orderNumber,
-                    "dummy", address, distance, totalPaid, orderHeader.getStatus()
+                    orderHeader.getCreatedBy(), address, distance, totalPaid, orderHeader.getStatus()
             });
         }
 
         stringWriter.flush();
 
         return stringWriter;
+    }
+
+    private static OrderDelivery checkOrderDelivery(OrderDelivery toCheck) {
+        OrderDelivery newOrder = new OrderDelivery();
+        newOrder.setStreet("");
+        newOrder.setProvince("");
+        newOrder.setDistanceInKm(0);
+        if (toCheck != null) {
+            if (toCheck.getStreet() != null) newOrder.setStreet(toCheck.getStreet());
+            if (toCheck.getProvince() != null) newOrder.setProvince(toCheck.getProvince());
+            newOrder.setDistanceInKm(toCheck.getDistanceInKm());
+        }
+        return newOrder;
     }
 }
