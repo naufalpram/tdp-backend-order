@@ -19,7 +19,7 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    public void sendEmail(String toEmail, String subject, String body, StringWriter csvData) throws MessagingException {
+    public void sendEmailToAdmin(String toEmail, String subject, String body, StringWriter csvData) throws MessagingException {
         jakarta.mail.internet.MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
 

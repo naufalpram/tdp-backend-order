@@ -345,7 +345,7 @@ public class OrderService {
                 allOrder = this.orderHeaderRepository.findAllByStatus(status, Sort.by("createdAt").descending());
             }
             StringWriter csvData = OrderLogicService.createCsv(allOrder);
-            this.emailService.sendEmail("naufal.pramudya11@gmail.com",
+            this.emailService.sendEmailToAdmin("naufal.pramudya11@gmail.com",
                     "Order Report for Admin",
                     String.format("The attached csv file contains %s customer order data from the database", status),
                     csvData);
