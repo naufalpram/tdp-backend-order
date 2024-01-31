@@ -1,5 +1,7 @@
 package com.edts.tdp.batch4.service;
 
+import com.edts.tdp.batch4.bean.catalog.OrderProductInfo;
+import com.edts.tdp.batch4.bean.catalog.OrderProductResponse;
 import com.edts.tdp.batch4.constant.DeliveryFeeMultiplier;
 import com.edts.tdp.batch4.constant.StaticGeoLocation;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
@@ -11,6 +13,8 @@ import com.edts.tdp.batch4.utils.JwtUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.opencsv.CSVWriter;
 import jakarta.servlet.http.HttpServletRequest;
+import org.hibernate.query.Order;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,9 +26,14 @@ import java.util.List;
 @Service
 public class OrderLogicService {
 
-    private static JwtUtil jwtUtil;
+    @Autowired
+    private JwtUtil jwtUtil;
 
-    public static double distanceCounter( double lat, double lon ) {
+    public OrderLogicService(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
+    public static double distanceCounter(double lat, double lon ) {
         // Conversi sudut ke Radiant
         double radLat1 = Math.toRadians(StaticGeoLocation.LATITUDE);
         double radLat2 = Math.toRadians(lat);
@@ -53,7 +62,7 @@ public class OrderLogicService {
         }
     }
 
-    public static OrderCustomerInfo getCustomerInfo(HttpServletRequest httpServletRequest, String path) {
+    public OrderCustomerInfo getCustomerInfo(HttpServletRequest httpServletRequest, String path) {
         String authHeader = httpServletRequest.getHeader("Authorization");
         String token = authHeader.substring(7);
 
@@ -76,13 +85,11 @@ public class OrderLogicService {
                                                                 String.class);
         if ( response.getStatusCode().equals(HttpStatus.OK)) {
             ObjectMapper objectMapper = new ObjectMapper();
-            OrderCustomerInfo orderCustomerInfo = null;
             try {
-                orderCustomerInfo = objectMapper.readValue(response.getBody(), OrderCustomerInfo.class);
+                return objectMapper.readValue(response.getBody(), OrderCustomerInfo.class);
             } catch (JsonProcessingException e) {
                 throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), path);
             }
-            return orderCustomerInfo;
         }
         throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
     }
@@ -125,5 +132,25 @@ public class OrderLogicService {
         stringWriter.flush();
 
         return stringWriter;
+    }
+
+    public static OrderProductResponse getAllProductInfo(List<Integer> arrayProduct) {
+        String url = "https://proud-mongoose-shortly.ngrok-free.app/api/v1/catalog/order/product";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String requestBody = arrayProduct.toString();
+        HttpEntity<List<Integer>> httpEntity = new HttpEntity<>(arrayProduct, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        OrderProductResponse response = restTemplate.postForObject(url, httpEntity, OrderProductResponse.class);
+
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        try {
+//            return objectMapper.readValue(response.getBody(), OrderProductResponse.class);
+//        } catch (JsonProcessingException e) {
+//            throw new RuntimeException(e);
+//        }
+        return response;
     }
 }
