@@ -290,10 +290,12 @@ public class OrderService {
         return response;
     }
 
-    public BaseResponseBean<FullOrderInfoBean> getFullOrderInfo(Long customerId, String orderNumber) {
+    public BaseResponseBean<FullOrderInfoBean> getFullOrderInfo(String orderNumber, OrderCustomerInfo orderCustomerInfo) {
         String path = "/detail";
         BaseResponseBean<FullOrderInfoBean> response = new BaseResponseBean<>();
-        if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+        Long customerId = orderCustomerInfo.getId();
+
+        if (orderCustomerInfo == null) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer", path);
 
         Optional<OrderHeader> orderHeader = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
         if (orderHeader.isEmpty())

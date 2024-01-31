@@ -1,9 +1,12 @@
 package com.edts.tdp.batch4.controller;
 
 import com.edts.tdp.batch4.bean.BaseResponseBean;
+import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
 import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
 import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
+import com.edts.tdp.batch4.exception.OrderCustomException;
+import com.edts.tdp.batch4.service.OrderLogicService;
 import com.edts.tdp.batch4.service.OrderService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +33,8 @@ public class OrderController {
 
     @PostMapping("/create")
     public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(@RequestBody List<RequestProductBean> body, HttpServletRequest httpServletRequest) throws JsonProcessingException {
+        // validate customer
+
         BaseResponseBean<CreatedOrderBean> response;
         response = orderService.createOrder(body, httpServletRequest);
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -79,10 +84,16 @@ public class OrderController {
     }
 
     @GetMapping("/detail")
-    public ResponseEntity<BaseResponseBean<FullOrderInfoBean>> getFullOrderInfo(@RequestParam Long customerId,
-                                                                                @RequestParam String orderNumber) {
+    public ResponseEntity<BaseResponseBean<FullOrderInfoBean>> getFullOrderInfo(@RequestParam String orderNumber,
+                                                                                HttpServletRequest httpServletRequest) {
+        OrderCustomerInfo orderCustomerInfo;
+        try {
+            orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), "/detail");
+        }
         BaseResponseBean<FullOrderInfoBean> response;
-        response = orderService.getFullOrderInfo(customerId, orderNumber);
+        response = orderService.getFullOrderInfo(orderNumber, orderCustomerInfo);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
