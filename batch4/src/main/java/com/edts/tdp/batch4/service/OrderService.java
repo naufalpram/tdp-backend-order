@@ -315,7 +315,7 @@ public class OrderService {
         return response;
     }
 
-    public StringWriter generateCsvReport(String status) {
+    public BaseResponseBean<String> generateCsvReport(String status) {
         String path = "/generate-report";
         try {
             List<OrderHeader> allOrder;
@@ -327,10 +327,17 @@ public class OrderService {
             StringWriter csvData = OrderLogicService.createCsv(allOrder);
             this.emailService.sendEmail("naufal.pramudya11@gmail.com",
                     "Order Report for Admin",
-                    "The attached csv file contains all customer order data from the database", csvData);
-            return csvData;
+                    String.format("The attached csv file contains %s customer order data from the database", status),
+                    csvData);
         } catch (Exception e) {
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), path);
         }
+        BaseResponseBean<String> response = new BaseResponseBean<>();
+        response.setStatus(HttpStatus.OK);
+        response.setData("Check email");
+        response.setMessage(HttpStatus.OK.getReasonPhrase());
+        response.setCode(200);
+        response.setTimestamp(LocalDateTime.now());
+        return response;
     }
 }

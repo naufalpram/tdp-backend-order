@@ -87,16 +87,8 @@ public class OrderController {
     }
 
     @GetMapping("/generate-report/{status}")
-    public ResponseEntity<?> generateOrderReport(@PathVariable String status) throws IOException {
-        try {
-            StringWriter stringWriter = orderService.generateCsvReport(status);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"report.csv\"")
-                    .body(stringWriter.toString());
-
-        }catch (Exception e){
-            System.out.println(e.getMessage());
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+    public ResponseEntity<BaseResponseBean<String>> generateOrderReport(@PathVariable String status) throws IOException {
+        BaseResponseBean<String> response = orderService.generateCsvReport(status);
+        return new ResponseEntity<>(response, HttpStatus.OK);   
     }
 }
