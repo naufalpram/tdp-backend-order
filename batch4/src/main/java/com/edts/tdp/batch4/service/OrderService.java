@@ -3,20 +3,18 @@ package com.edts.tdp.batch4.service;
 import com.edts.tdp.batch4.bean.BaseResponseBean;
 import com.edts.tdp.batch4.bean.catalog.OrderProductInfo;
 import com.edts.tdp.batch4.bean.catalog.OrderProductResponse;
+import com.edts.tdp.batch4.bean.customer.OrderCartBean;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
 import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
 import com.edts.tdp.batch4.bean.response.OrderDetailBean;
 import com.edts.tdp.batch4.constant.Status;
-import com.edts.tdp.batch4.bean.request.RequestProductBean;
-import com.edts.tdp.batch4.controller.OrderController;
 import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.model.*;
 import com.edts.tdp.batch4.repository.OrderDeliveryRepository;
 import com.edts.tdp.batch4.repository.OrderDetailRepository;
 import com.edts.tdp.batch4.repository.OrderHeaderRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -26,7 +24,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
@@ -43,18 +40,22 @@ public class OrderService {
 
     private final EmailService emailService;
 
+    private final OrderLogicService orderLogicService;
+
     @Autowired
     public OrderService(OrderHeaderRepository orderHeaderRepository,
                         OrderDetailRepository orderDetailRepository,
-                        OrderDeliveryRepository orderDeliveryRepository, EmailService emailService) {
+                        OrderDeliveryRepository orderDeliveryRepository, EmailService emailService, OrderLogicService orderLogicService) {
         this.orderHeaderRepository = orderHeaderRepository;
         this.orderDetailRepository = orderDetailRepository;
         this.orderDeliveryRepository = orderDeliveryRepository;
         this.emailService = emailService;
+        this.orderLogicService = orderLogicService;
     }
 
-    public BaseResponseBean<CreatedOrderBean> createOrder(List<RequestProductBean> body, OrderCustomerInfo orderCustomerInfo) {
+    public BaseResponseBean<CreatedOrderBean> createOrder(List<OrderCartBean> body, OrderCustomerInfo orderCustomerInfo, HttpServletRequest httpServletRequest) {
         String path = "/order/create";
+        List<OrderCartBean> cartData = orderLogicService.getCartData(httpServletRequest, path);
         if(body.isEmpty()){
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body length can't be zero", path);
         }
@@ -89,23 +90,31 @@ public class OrderService {
         for (int i = 0; i < body.size(); i++) {
             temp.add(Math.toIntExact(body.get(i).getProductId()));
         }
-        System.out.println("temp = " + temp);
         OrderProductResponse orderProductResponse = OrderLogicService.getAllProductInfo(temp);
 
         ArrayList<OrderDetail> arr = new ArrayList<>();
         double totalPrice = 0.0;
         for (int i = 0; i < orderProductResponse.getData().size() ; i++) {
             OrderProductInfo item = orderProductResponse.getData().get(i);
+            if ( item.getStock() < body.get(i).getQuantity() ) {
+                continue;
+            }
             OrderDetail orderDetail = new OrderDetail();
             orderDetail.setProductId(item.getId());
             orderDetail.setPrice(item.getPrice());
-            orderDetail.setQty(body.get(i).getQty());
+            orderDetail.setQty(body.get(i).getQuantity());
             orderDetail.setCreatedBy(orderCustomerInfo.getUsername());
             orderDetail.setOrderHeader(tempOrderHeader);
 
             arr.add(orderDetail);
-            totalPrice += (item.getPrice() * body.get(i).getQty());
+            totalPrice += (item.getPrice() * body.get(i).getQuantity());
         }
+        // if all product stock are empty
+        if (arr.size() == 0) {
+            this.orderHeaderRepository.delete(tempOrderHeader);
+            throw new OrderCustomException(HttpStatus.NO_CONTENT, "Empty products, please add product with available stock", path);
+        }
+
         this.orderDetailRepository.saveAll(arr);
 
         tempOrderHeader.setTotalPaid(Double.valueOf(priceFormat.format(tempOrderHeader.getTotalPaid() + totalPrice)));
@@ -125,6 +134,8 @@ public class OrderService {
         response.setCode(200);
         response.setMessage(HttpStatus.OK.getReasonPhrase());
         response.setData(orderBean);
+
+//        OrderLogicService.updateStockProduct(cartData);
         return response;
     }
 

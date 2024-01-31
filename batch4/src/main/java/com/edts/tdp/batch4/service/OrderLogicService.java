@@ -1,7 +1,9 @@
 package com.edts.tdp.batch4.service;
 
-import com.edts.tdp.batch4.bean.catalog.OrderProductInfo;
 import com.edts.tdp.batch4.bean.catalog.OrderProductResponse;
+import com.edts.tdp.batch4.bean.catalog.OrderStockUpdate;
+import com.edts.tdp.batch4.bean.catalog.StockUpdateRequest;
+import com.edts.tdp.batch4.bean.customer.OrderCartBean;
 import com.edts.tdp.batch4.constant.DeliveryFeeMultiplier;
 import com.edts.tdp.batch4.constant.StaticGeoLocation;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
@@ -13,7 +15,6 @@ import com.edts.tdp.batch4.utils.JwtUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.opencsv.CSVWriter;
 import jakarta.servlet.http.HttpServletRequest;
-import org.hibernate.query.Order;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -144,13 +145,49 @@ public class OrderLogicService {
         RestTemplate restTemplate = new RestTemplate();
 
         OrderProductResponse response = restTemplate.postForObject(url, httpEntity, OrderProductResponse.class);
-
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        try {
-//            return objectMapper.readValue(response.getBody(), OrderProductResponse.class);
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException(e);
-//        }
         return response;
+    }
+
+    public static OrderStockUpdate updateStockProduct(List<StockUpdateRequest> arrayProduct) {
+        String url = "https://proud-mongoose-shortly.ngrok-free.app/api/v1/catalog/order/update";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<List<StockUpdateRequest>> httpEntity = new HttpEntity<>(arrayProduct, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        OrderStockUpdate response = restTemplate.postForObject(url, httpEntity, OrderStockUpdate.class);
+        return response;
+    }
+
+    public List<OrderCartBean> getCartData(HttpServletRequest httpServletRequest, String path) {
+        String authHeader = httpServletRequest.getHeader("Authorization");
+        String token = authHeader.substring(7);
+
+        Boolean isValidToken = jwtUtil.validateToken(token, path);
+
+        if ( !isValidToken ) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Token", path);
+        }
+        String url = "https://teaching-careful-lioness.ngrok-free.app/api/v1/customer/order_cart";
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.set("Authorization", authHeader);
+
+        HttpEntity<String> httpEntity = new HttpEntity<>(httpHeaders);
+        RestTemplate restTemplate = new RestTemplate();
+
+        ResponseEntity<String> response = restTemplate.exchange(url,
+                                        HttpMethod.GET,
+                                        httpEntity,
+                                        String.class);
+        if ( response.getStatusCode().equals(HttpStatus.OK)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            try {
+                return objectMapper.readValue(response.getBody(), List.class);
+            } catch (JsonProcessingException e) {
+                throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), path);
+            }
+        }
+        throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
     }
 }
