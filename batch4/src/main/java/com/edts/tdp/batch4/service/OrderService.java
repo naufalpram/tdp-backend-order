@@ -38,13 +38,16 @@ public class OrderService {
     private final OrderDetailRepository orderDetailRepository;
     private final OrderDeliveryRepository orderDeliveryRepository;
 
+    private final EmailService emailService;
+
     @Autowired
     public OrderService(OrderHeaderRepository orderHeaderRepository,
                         OrderDetailRepository orderDetailRepository,
-                        OrderDeliveryRepository orderDeliveryRepository) {
+                        OrderDeliveryRepository orderDeliveryRepository, EmailService emailService) {
         this.orderHeaderRepository = orderHeaderRepository;
         this.orderDetailRepository = orderDetailRepository;
         this.orderDeliveryRepository = orderDeliveryRepository;
+        this.emailService = emailService;
     }
 
     public BaseResponseBean<CreatedOrderBean> createOrder(List<RequestProductBean> body, HttpServletRequest httpServletRequest) throws JsonProcessingException {
@@ -321,7 +324,11 @@ public class OrderService {
             } else {
                 allOrder = this.orderHeaderRepository.findAllByStatus(status, Sort.by("createdAt").descending());
             }
-            return OrderLogicService.createCsv(allOrder);
+            StringWriter csvData = OrderLogicService.createCsv(allOrder);
+            this.emailService.sendEmail("naufal.pramudya11@gmail.com",
+                    "Order Report for Admin",
+                    "The attached csv file contains all customer order data from the database", csvData);
+            return csvData;
         } catch (Exception e) {
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), path);
         }

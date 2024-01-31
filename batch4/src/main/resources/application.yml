@@ -10,3 +10,15 @@ spring:
     #    database-platform: org.hibernate.dialect.MySQL5Dialect
     hibernate:
       ddl-auto: update
+  mail:
+    host: smtp.gmail.com
+    #  vdqn btsl jpgv rarl
+    password: vdqnbtsljpgvrarl
+    port: 587
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    username: naufal.pramudya@sg-dsa.com
