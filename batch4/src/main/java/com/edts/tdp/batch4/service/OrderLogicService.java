@@ -4,15 +4,13 @@ import com.edts.tdp.batch4.constant.DeliveryFeeMultiplier;
 import com.edts.tdp.batch4.constant.StaticGeoLocation;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
+import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.model.OrderDelivery;
 import com.edts.tdp.batch4.model.OrderHeader;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.opencsv.CSVWriter;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.client.RestTemplate;
@@ -65,10 +63,12 @@ public class OrderLogicService {
                                                                 HttpMethod.GET,
                                                                 httpEntity,
                                                                 String.class);
-        ObjectMapper objectMapper = new ObjectMapper();
-        OrderCustomerInfo orderCustomerInfo = objectMapper.readValue(response.getBody(), OrderCustomerInfo.class);
-
-        return orderCustomerInfo;
+        if ( response.getStatusCode().equals(HttpStatus.OK)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            OrderCustomerInfo orderCustomerInfo = objectMapper.readValue(response.getBody(), OrderCustomerInfo.class);
+            return orderCustomerInfo;
+        }
+        throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", "CustomerId");
     }
 
     public static OrderCustomerAddress getCustomerAddress(OrderCustomerInfo orderCustomerInfo) {

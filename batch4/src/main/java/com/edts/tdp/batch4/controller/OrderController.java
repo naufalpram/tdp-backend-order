@@ -32,59 +32,97 @@ public class OrderController {
     OrderService orderService;
 
     @PostMapping("/create")
-    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(@RequestBody List<RequestProductBean> body, HttpServletRequest httpServletRequest) throws JsonProcessingException {
+    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(@RequestBody List<RequestProductBean> body,
+                                                                          HttpServletRequest httpServletRequest) {
         // validate customer
-
+        OrderCustomerInfo orderCustomerInfo;
+        try {
+            orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), "/create");
+        }
         BaseResponseBean<CreatedOrderBean> response;
-        response = orderService.createOrder(body, httpServletRequest);
+        response = orderService.createOrder(body, orderCustomerInfo);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/get-history")
-    public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrders(@RequestParam int page,
-                                                                            @RequestParam int size,
-                                                                            HttpServletRequest httpServletRequest) throws JsonProcessingException {
+    public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrders(@RequestBody int page,
+                                                                            @RequestBody int size,
+                                                                            HttpServletRequest httpServletRequest) {
+        OrderCustomerInfo orderCustomerInfo;
+        try {
+            orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), "/get-history");
+        }
         BaseResponseBean<Page<CreatedOrderBean>> response;
-        response = orderService.getAllOrderByCustomerId(page, size, httpServletRequest);
+        response = orderService.getAllOrderByCustomerId(page, size, orderCustomerInfo);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/get-history/filter")
-    public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrdersByStatus(@RequestParam String status,
-                                                                                    @RequestParam int page,
-                                                                                    @RequestParam int size,
-                                                                                    HttpServletRequest httpServletRequest) throws JsonProcessingException {
+    public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrdersByStatus(@RequestBody String status,
+                                                                                    @RequestBody int page,
+                                                                                    @RequestBody int size,
+                                                                                    HttpServletRequest httpServletRequest) {
+        OrderCustomerInfo orderCustomerInfo;
+        try {
+            orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), "/get-history/filter");
+        }
+
         BaseResponseBean<Page<CreatedOrderBean>> responseBean;
-        responseBean = orderService.findAllByCustomerIdAndStatus(status, page, size, httpServletRequest);
+        responseBean = orderService.findAllByCustomerIdAndStatus(status, page, size, orderCustomerInfo);
         return new ResponseEntity<>(responseBean, HttpStatus.OK);
     }
 
     @PostMapping("/update/sent")
-    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> updateOrderSent(@RequestParam String orderNumber,
-                                                                              HttpServletRequest httpServletRequest) throws JsonProcessingException {
+    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> updateOrderSent(@RequestBody String orderNumber,
+                                                                              HttpServletRequest httpServletRequest) {
+        OrderCustomerInfo orderCustomerInfo;
+        try {
+            orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), "/update/sent");
+        }
         BaseResponseBean<CreatedOrderBean> orderBean;
-        orderBean = orderService.sendOrder(orderNumber, httpServletRequest);
+        orderBean = orderService.sendOrder(orderNumber, orderCustomerInfo);
         return new ResponseEntity<>(orderBean, HttpStatus.OK);
     }
 
     @PostMapping("/update/cancel")
-    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> cancelOrder(@RequestParam String orderNumber,
-                                                                          HttpServletRequest httpServletRequest) throws JsonProcessingException {
+    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> cancelOrder(@RequestBody String orderNumber,
+                                                                          HttpServletRequest httpServletRequest) {
+
+        OrderCustomerInfo orderCustomerInfo;
+        try {
+            orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), "/update/cancel");
+        }
         BaseResponseBean<CreatedOrderBean> orderBean;
-        orderBean = orderService.cancelOrder(orderNumber, httpServletRequest);
+        orderBean = orderService.cancelOrder(orderNumber, orderCustomerInfo);
         return new ResponseEntity<>(orderBean, HttpStatus.OK);
     }
 
     @PostMapping("/update/return")
-    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> returnOrder(@RequestParam String orderNumber,
-                                                                          HttpServletRequest httpServletRequest) throws JsonProcessingException {
+    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> returnOrder(@RequestBody String orderNumber,
+                                                                          HttpServletRequest httpServletRequest) {
+        OrderCustomerInfo orderCustomerInfo;
+        try {
+            orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), "/update/return");
+        }
         BaseResponseBean<CreatedOrderBean> response;
-        response = orderService.returnOrder(orderNumber, httpServletRequest);
+        response = orderService.returnOrder(orderNumber, orderCustomerInfo);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @GetMapping("/detail")
-    public ResponseEntity<BaseResponseBean<FullOrderInfoBean>> getFullOrderInfo(@RequestParam String orderNumber,
+    public ResponseEntity<BaseResponseBean<FullOrderInfoBean>> getFullOrderInfo(@RequestBody String orderNumber,
                                                                                 HttpServletRequest httpServletRequest) {
         OrderCustomerInfo orderCustomerInfo;
         try {
@@ -101,5 +139,19 @@ public class OrderController {
     public ResponseEntity<BaseResponseBean<String>> generateOrderReport(@PathVariable String status) throws IOException {
         BaseResponseBean<String> response = orderService.generateCsvReport(status);
         return new ResponseEntity<>(response, HttpStatus.OK);   
+    }
+
+    @PostMapping("/update/delivered")
+    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> updateOrderDelivered(@RequestBody String orderNumber,
+                                                                                   HttpServletRequest httpServletRequest) {
+        OrderCustomerInfo orderCustomerInfo;
+        try {
+            orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), "/update/delivered");
+        }
+        BaseResponseBean<CreatedOrderBean> response;
+        response = orderService.updateOrderDelivered(orderNumber, orderCustomerInfo);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
