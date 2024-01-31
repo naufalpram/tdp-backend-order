@@ -47,8 +47,8 @@ public class OrderController {
     }
 
     @GetMapping("/get-history")
-    public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrders(@RequestBody int page,
-                                                                            @RequestBody int size,
+    public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrders(@RequestParam int page,
+                                                                            @RequestParam int size,
                                                                             HttpServletRequest httpServletRequest) {
         OrderCustomerInfo orderCustomerInfo;
         try {
