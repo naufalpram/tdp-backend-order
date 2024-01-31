@@ -1,6 +1,7 @@
 package com.edts.tdp.batch4.service;
 
 import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -20,7 +21,7 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     public void sendEmailToAdmin(String toEmail, String subject, String body, StringWriter csvData) throws MessagingException {
-        jakarta.mail.internet.MimeMessage message = mailSender.createMimeMessage();
+        MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
         helper.setTo(toEmail);
@@ -54,6 +55,19 @@ public class EmailService {
                 };
             }
         });
+
+        mailSender.send(message);
+    }
+
+    public void sendEmailToCustomer(String toEmail, String subject, String htmlContent) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper;
+
+        helper = new MimeMessageHelper(message, true);
+//        helper.setTo(toEmail);
+        helper.setTo("naufal.pramudya11@gmail.com");
+        helper.setSubject(subject);
+        helper.setText(htmlContent, true);
 
         mailSender.send(message);
     }

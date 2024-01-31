@@ -1,11 +1,13 @@
 package com.edts.tdp.batch4.service;
 
+import com.edts.tdp.batch4.bean.response.OrderDetailBean;
 import com.edts.tdp.batch4.constant.DeliveryFeeMultiplier;
 import com.edts.tdp.batch4.constant.StaticGeoLocation;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
 import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.model.OrderDelivery;
+import com.edts.tdp.batch4.model.OrderDetail;
 import com.edts.tdp.batch4.model.OrderHeader;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.opencsv.CSVWriter;
@@ -110,6 +112,35 @@ public class OrderLogicService {
         return stringWriter;
     }
 
+    public static String orderReportHtml(OrderHeader orderHeader, List<OrderDetailBean> productDetails) {
+        if (orderHeader == null)
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "No order", "/update/deliver");
+        String htmlContent = "";
+        String productList = "";
+        for (OrderDetail product: orderHeader.getOrderDetailList()) {
+            productList += String.format("""
+                        <li>
+                           <p>%s %dx | Rp%.2f</p>
+                        </li>
+                    """, product.getProductId(), product.getQty(), product.getPrice()*product.getQty());
+        }
+        htmlContent += String.format("""
+                    <html>
+                      <body>
+                        <h1>Your Order Report</h1>
+                        <div>
+                          <h4>Order Number: %s</h4>
+                          <h4>Total Paid: Rp%.2f</h4>
+                          <ul>
+                            %s
+                          </ul>
+                        </div>
+                      </body>
+                    </html>
+                """, orderHeader.getOrderNumber(), orderHeader.getTotalPaid(), productList);
+        return htmlContent;
+    }
+
     private static OrderDelivery checkOrderDelivery(OrderDelivery toCheck) {
         OrderDelivery newOrder = new OrderDelivery();
         newOrder.setStreet("");
@@ -122,4 +153,5 @@ public class OrderLogicService {
         }
         return newOrder;
     }
+
 }

@@ -8,14 +8,12 @@ import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
 import com.edts.tdp.batch4.bean.response.OrderDetailBean;
 import com.edts.tdp.batch4.constant.Status;
 import com.edts.tdp.batch4.bean.request.RequestProductBean;
-import com.edts.tdp.batch4.controller.OrderController;
 import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.model.*;
 import com.edts.tdp.batch4.repository.OrderDeliveryRepository;
 import com.edts.tdp.batch4.repository.OrderDetailRepository;
 import com.edts.tdp.batch4.repository.OrderHeaderRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import jakarta.servlet.http.HttpServletRequest;
+import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,7 +22,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
@@ -53,20 +50,21 @@ public class OrderService {
 
     public BaseResponseBean<CreatedOrderBean> createOrder(List<RequestProductBean> body, OrderCustomerInfo orderCustomerInfo) {
         String path = "/order/create";
-        if(body.isEmpty()){
-            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body length can't be zero", path);
-        }
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
         DecimalFormat priceFormat = new DecimalFormat("#.##");
         DecimalFormat distanceFormat = new DecimalFormat("#.00");
-        //double distance = OrderLogicService.distanceCounter(-6.175205678775132, 106.82715894445303);
-        OrderCustomerAddress orderCustomerAddress = OrderLogicService.getCustomerAddress(orderCustomerInfo);
 
-        double distance = OrderLogicService.distanceCounter(orderCustomerAddress.getLatitude(), orderCustomerAddress.getLongitude());
+        // get cart data customer API
+        if(body.isEmpty()){
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body length can't be zero", path);
+        }
+
+        OrderCustomerAddress orderCustomerAddress = OrderLogicService.getCustomerAddress(orderCustomerInfo);
 
         OrderHeader orderHeader = new OrderHeader();
         orderHeader.setCustomerId(orderCustomerInfo.getId());
         orderHeader.setCreatedBy(orderCustomerInfo.getUsername());
+        double distance = OrderLogicService.distanceCounter(orderCustomerAddress.getLatitude(), orderCustomerAddress.getLongitude());
         orderHeader.setTotalPaid(OrderLogicService.deliveryCost(distance));
         Optional<OrderHeader> cek = this.orderHeaderRepository.findByOrderNumber(orderHeader.getOrderNumber());
 
@@ -83,6 +81,8 @@ public class OrderService {
         orderDelivery.setLatitude(orderCustomerAddress.getLatitude());
         orderDelivery.setLongitude(orderDelivery.getLongitude());
 
+        // get product info API
+        // validate stock, if there are any invalid stock, exclude from array
         ArrayList<OrderDetail> arr = new ArrayList<>();
         double totalPrice = 0.0;
         for (int i = 0; i < body.size(); i++) {
@@ -99,6 +99,7 @@ public class OrderService {
         }
         this.orderDetailRepository.saveAll(arr);
 
+        // update products stock via API
         tempOrderHeader.setTotalPaid(Double.valueOf(priceFormat.format(tempOrderHeader.getTotalPaid() + totalPrice)));
         tempOrderHeader = this.orderHeaderRepository.save(tempOrderHeader);
 
@@ -235,6 +236,8 @@ public class OrderService {
         orderHeader.setModifiedBy(orderHeader.getCreatedBy());
         this.orderHeaderRepository.save(orderHeader);
 
+        // update stock via API
+
         CreatedOrderBean createdOrderBean = new CreatedOrderBean();
         createdOrderBean.setStatus(Status.CANCELLED);
         createdOrderBean.setOrderNumber(orderNumber);
@@ -272,6 +275,8 @@ public class OrderService {
         orderHeader.setModifiedAt(LocalDateTime.now());
         orderHeader.setModifiedBy(orderHeader.getCreatedBy());
         this.orderHeaderRepository.save(orderHeader);
+
+        // update stock via API
 
         CreatedOrderBean createdOrderBean = new CreatedOrderBean();
         createdOrderBean.setStatus(Status.RETURNED);
@@ -312,6 +317,7 @@ public class OrderService {
         infoBean.setPostalCode(data.getOrderDelivery().getPostCode());
         infoBean.setDistanceInKm(data.getOrderDelivery().getDistanceInKm());
 
+        // get product info api for below list
         List<OrderDetail> orderDetailList = data.getOrderDetailList();
         List<OrderDetailBean> detailsBean = new ArrayList<>();
         for (OrderDetail item : orderDetailList) {
@@ -396,6 +402,14 @@ public class OrderService {
         response.setMessage(HttpStatus.OK.getReasonPhrase());
         response.setCode(200);
         response.setTimestamp(LocalDateTime.now());
+
+        // get product info api for htmlContent arr list
+        String htmlContent = OrderLogicService.orderReportHtml(orderHeader, new ArrayList<>());
+        try {
+            this.emailService.sendEmailToCustomer(orderCustomerInfo.getEmail(), "Order Report", htmlContent);
+        } catch (MessagingException e) {
+            throw new OrderCustomException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), "/update/delivered");
+        }
         return response;
     }
 }

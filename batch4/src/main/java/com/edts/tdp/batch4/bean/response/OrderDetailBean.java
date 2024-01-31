@@ -9,4 +9,5 @@ public class OrderDetailBean {
     private int qty;
     private String price;
     private String productImage;
+    // tambahin name
 }
