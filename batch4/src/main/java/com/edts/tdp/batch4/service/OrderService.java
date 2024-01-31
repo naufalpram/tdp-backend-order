@@ -23,6 +23,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -36,13 +38,16 @@ public class OrderService {
     private final OrderDetailRepository orderDetailRepository;
     private final OrderDeliveryRepository orderDeliveryRepository;
 
+    private final EmailService emailService;
+
     @Autowired
     public OrderService(OrderHeaderRepository orderHeaderRepository,
                         OrderDetailRepository orderDetailRepository,
-                        OrderDeliveryRepository orderDeliveryRepository) {
+                        OrderDeliveryRepository orderDeliveryRepository, EmailService emailService) {
         this.orderHeaderRepository = orderHeaderRepository;
         this.orderDetailRepository = orderDetailRepository;
         this.orderDeliveryRepository = orderDeliveryRepository;
+        this.emailService = emailService;
     }
 
     public BaseResponseBean<CreatedOrderBean> createOrder(List<RequestProductBean> body, HttpServletRequest httpServletRequest) throws JsonProcessingException {
@@ -86,7 +91,7 @@ public class OrderService {
             orderDetail.setProductId(item.getProductId());
             orderDetail.setPrice(item.getPrice());
             orderDetail.setQty(item.getQty());
-            orderDetail.setCreatedBy("amini");
+            orderDetail.setCreatedBy(orderCustomerInfo.getUsername());
             orderDetail.setOrderHeader(tempOrderHeader);
 
             arr.add(orderDetail);
@@ -285,10 +290,12 @@ public class OrderService {
         return response;
     }
 
-    public BaseResponseBean<FullOrderInfoBean> getFullOrderInfo(Long customerId, String orderNumber) {
+    public BaseResponseBean<FullOrderInfoBean> getFullOrderInfo(String orderNumber, OrderCustomerInfo orderCustomerInfo) {
         String path = "/detail";
         BaseResponseBean<FullOrderInfoBean> response = new BaseResponseBean<>();
-        if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+        Long customerId = orderCustomerInfo.getId();
+
+        if (orderCustomerInfo == null) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer", path);
 
         Optional<OrderHeader> orderHeader = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
         if (orderHeader.isEmpty())
@@ -322,6 +329,32 @@ public class OrderService {
 
         response.setStatus(HttpStatus.OK);
         response.setData(infoBean);
+        response.setMessage(HttpStatus.OK.getReasonPhrase());
+        response.setCode(200);
+        response.setTimestamp(LocalDateTime.now());
+        return response;
+    }
+
+    public BaseResponseBean<String> generateCsvReport(String status) {
+        String path = "/generate-report";
+        try {
+            List<OrderHeader> allOrder;
+            if (status.equals("all")) {
+                allOrder = this.orderHeaderRepository.findAll(Sort.by("createdAt").descending());
+            } else {
+                allOrder = this.orderHeaderRepository.findAllByStatus(status, Sort.by("createdAt").descending());
+            }
+            StringWriter csvData = OrderLogicService.createCsv(allOrder);
+            this.emailService.sendEmail("naufal.pramudya11@gmail.com",
+                    "Order Report for Admin",
+                    String.format("The attached csv file contains %s customer order data from the database", status),
+                    csvData);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), path);
+        }
+        BaseResponseBean<String> response = new BaseResponseBean<>();
+        response.setStatus(HttpStatus.OK);
+        response.setData("Check email");
         response.setMessage(HttpStatus.OK.getReasonPhrase());
         response.setCode(200);
         response.setTimestamp(LocalDateTime.now());

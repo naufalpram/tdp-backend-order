@@ -31,7 +31,7 @@ public class OrderHeader {
     @Column(name = "modified_at", columnDefinition = "TIMESTAMP")
     private LocalDateTime modifiedAt;
 
-    @Column(name = "modified_by", nullable = false, length = 20)
+    @Column(name = "modified_by", length = 20)
     private String modifiedBy;
 
     @Column(name = "customer_id", nullable = false)

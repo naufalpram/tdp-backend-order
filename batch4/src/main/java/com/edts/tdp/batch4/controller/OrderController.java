@@ -1,22 +1,27 @@
 package com.edts.tdp.batch4.controller;
 
 import com.edts.tdp.batch4.bean.BaseResponseBean;
+import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
 import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
 import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
-import com.edts.tdp.batch4.model.OrderHeader;
+import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.service.OrderLogicService;
 import com.edts.tdp.batch4.service.OrderService;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import jakarta.persistence.criteria.Order;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.List;
 
 @RestController
@@ -28,6 +33,8 @@ public class OrderController {
 
     @PostMapping("/create")
     public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(@RequestBody List<RequestProductBean> body, HttpServletRequest httpServletRequest) throws JsonProcessingException {
+        // validate customer
+
         BaseResponseBean<CreatedOrderBean> response;
         response = orderService.createOrder(body, httpServletRequest);
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -77,10 +84,22 @@ public class OrderController {
     }
 
     @GetMapping("/detail")
-    public ResponseEntity<BaseResponseBean<FullOrderInfoBean>> getFullOrderInfo(@RequestParam Long customerId,
-                                                                                @RequestParam String orderNumber) {
+    public ResponseEntity<BaseResponseBean<FullOrderInfoBean>> getFullOrderInfo(@RequestParam String orderNumber,
+                                                                                HttpServletRequest httpServletRequest) {
+        OrderCustomerInfo orderCustomerInfo;
+        try {
+            orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest);
+        } catch (Exception e) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), "/detail");
+        }
         BaseResponseBean<FullOrderInfoBean> response;
-        response = orderService.getFullOrderInfo(customerId, orderNumber);
+        response = orderService.getFullOrderInfo(orderNumber, orderCustomerInfo);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/generate-report/{status}")
+    public ResponseEntity<BaseResponseBean<String>> generateOrderReport(@PathVariable String status) throws IOException {
+        BaseResponseBean<String> response = orderService.generateCsvReport(status);
+        return new ResponseEntity<>(response, HttpStatus.OK);   
     }
 }
