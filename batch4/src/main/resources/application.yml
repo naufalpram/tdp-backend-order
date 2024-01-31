@@ -22,3 +22,5 @@ spring:
           starttls:
             enable: true
     username: naufal.pramudya@sg-dsa.com
+rsa:
+  public-key: classpath:certs/public.pem

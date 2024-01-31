@@ -7,6 +7,7 @@ import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
 import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.model.OrderDelivery;
 import com.edts.tdp.batch4.model.OrderHeader;
+import com.edts.tdp.batch4.utils.JwtUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.opencsv.CSVWriter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,6 +21,9 @@ import java.util.List;
 
 @Service
 public class OrderLogicService {
+
+    private static JwtUtil jwtUtil;
+
     public static double distanceCounter( double lat, double lon ) {
         // Conversi sudut ke Radiant
         double radLat1 = Math.toRadians(StaticGeoLocation.LATITUDE);
@@ -52,6 +56,13 @@ public class OrderLogicService {
     public static OrderCustomerInfo getCustomerInfo(HttpServletRequest httpServletRequest, String path) {
         String authHeader = httpServletRequest.getHeader("Authorization");
         String token = authHeader.substring(7);
+
+        Boolean isValidToken = jwtUtil.validateToken(token, path);
+
+        if ( !isValidToken ) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Token", path);
+        }
+
         String url = "https://teaching-careful-lioness.ngrok-free.app/api/v1/customer/customer_info";
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.set("Authorization", authHeader);
