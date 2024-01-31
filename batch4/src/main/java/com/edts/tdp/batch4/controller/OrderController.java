@@ -26,12 +26,14 @@ public class OrderController {
     @Autowired
     OrderService orderService;
 
+    @Autowired
+    OrderLogicService orderLogicService;
+
     @PostMapping("/create")
     public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(@RequestBody List<RequestProductBean> body,
                                                                           HttpServletRequest httpServletRequest) {
-        // validate token
-
-        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest, "/create");
+        // validate customer
+        OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/create");
         BaseResponseBean<CreatedOrderBean> response;
         response = orderService.createOrder(body, orderCustomerInfo);
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -41,8 +43,8 @@ public class OrderController {
     public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrders(@RequestParam int page,
                                                                             @RequestParam int size,
                                                                             HttpServletRequest httpServletRequest) {
-        // validate token
-        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest, "/get-history");
+
+        OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/get-history");
         BaseResponseBean<Page<CreatedOrderBean>> response;
         response = orderService.getAllOrderByCustomerId(page, size, orderCustomerInfo);
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -53,11 +55,12 @@ public class OrderController {
                                                                                     @RequestParam int page,
                                                                                     @RequestParam int size,
                                                                                     HttpServletRequest httpServletRequest) {
+
         // validate token
         if (!request.containsKey("status"))
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body does not contain status key", "/get-history/filter");
         String status = request.get("status");
-        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest, "/get-history/filter");
+        OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/get-history/filter");
         BaseResponseBean<Page<CreatedOrderBean>> responseBean;
         responseBean = orderService.findAllByCustomerIdAndStatus(status, page, size, orderCustomerInfo);
         return new ResponseEntity<>(responseBean, HttpStatus.OK);
@@ -66,11 +69,12 @@ public class OrderController {
     @PostMapping("/update/sent")
     public ResponseEntity<BaseResponseBean<CreatedOrderBean>> updateOrderSent(@RequestBody Map<String, String> request,
                                                                               HttpServletRequest httpServletRequest) {
+
         // validate token
         if (!request.containsKey("orderNumber"))
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body does not contain orderNumber key", "/update/sent");
         String orderNumber = request.get("orderNumber");
-        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest, "/update/sent");
+        OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/update/sent");
         BaseResponseBean<CreatedOrderBean> orderBean;
         orderBean = orderService.sendOrder(orderNumber, orderCustomerInfo);
         return new ResponseEntity<>(orderBean, HttpStatus.OK);
@@ -79,11 +83,12 @@ public class OrderController {
     @PostMapping("/update/cancel")
     public ResponseEntity<BaseResponseBean<CreatedOrderBean>> cancelOrder(@RequestBody Map<String, String> request,
                                                                           HttpServletRequest httpServletRequest) {
+
         // validate token
         if (!request.containsKey("orderNumber"))
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body does not contain orderNumber key", "/update/cancel");
         String orderNumber = request.get("orderNumber");
-        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest, "/update/cancel");
+        OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/update/cancel");
         BaseResponseBean<CreatedOrderBean> orderBean;
         orderBean = orderService.cancelOrder(orderNumber, orderCustomerInfo);
         return new ResponseEntity<>(orderBean, HttpStatus.OK);
@@ -92,11 +97,12 @@ public class OrderController {
     @PostMapping("/update/return")
     public ResponseEntity<BaseResponseBean<CreatedOrderBean>> returnOrder(@RequestBody Map<String, String> request,
                                                                           HttpServletRequest httpServletRequest) {
+
         // validate token
         if (!request.containsKey("orderNumber"))
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body does not contain orderNumber key", "/update/return");
         String orderNumber = request.get("orderNumber");
-        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest, "/update/return");
+        OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/update/return");
         BaseResponseBean<CreatedOrderBean> response;
         response = orderService.returnOrder(orderNumber, orderCustomerInfo);
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -105,11 +111,12 @@ public class OrderController {
     @GetMapping("/detail")
     public ResponseEntity<BaseResponseBean<FullOrderInfoBean>> getFullOrderInfo(@RequestBody Map<String, String> request,
                                                                                 HttpServletRequest httpServletRequest) {
+
         // validate token
         if (!request.containsKey("orderNumber"))
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body does not contain orderNumber key", "/detail");
         String orderNumber = request.get("orderNumber");
-        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest, "/detail");
+        OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/detail");
         BaseResponseBean<FullOrderInfoBean> response;
         response = orderService.getFullOrderInfo(orderNumber, orderCustomerInfo);
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -124,11 +131,12 @@ public class OrderController {
     @PostMapping("/update/delivered")
     public ResponseEntity<BaseResponseBean<CreatedOrderBean>> updateOrderDelivered(@RequestBody Map<String, String> request,
                                                                                    HttpServletRequest httpServletRequest) {
+
         // validate token
         if (!request.containsKey("orderNumber"))
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body does not contain orderNumber key", "/update/delivered");
         String orderNumber = request.get("orderNumber");
-        OrderCustomerInfo orderCustomerInfo = OrderLogicService.getCustomerInfo(httpServletRequest, "/update/delivered");
+        OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/update/delivered");
         BaseResponseBean<CreatedOrderBean> response;
         response = orderService.updateOrderDelivered(orderNumber, orderCustomerInfo);
         return new ResponseEntity<>(response, HttpStatus.OK);

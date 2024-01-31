@@ -6,5 +6,5 @@ import lombok.Data;
 public class RequestProductBean {
     private Long productId;
     private int qty;
-    private double price;
+//    private double price;
 }
