@@ -1,6 +1,8 @@
 package com.edts.tdp.batch4.service;
 
 import com.edts.tdp.batch4.bean.BaseResponseBean;
+import com.edts.tdp.batch4.bean.catalog.OrderProductInfo;
+import com.edts.tdp.batch4.bean.catalog.OrderProductResponse;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
@@ -83,19 +85,26 @@ public class OrderService {
         orderDelivery.setLatitude(orderCustomerAddress.getLatitude());
         orderDelivery.setLongitude(orderDelivery.getLongitude());
 
+        List<Integer> temp = new ArrayList<>();
+        for (int i = 0; i < body.size(); i++) {
+            temp.add(Math.toIntExact(body.get(i).getProductId()));
+        }
+        System.out.println("temp = " + temp);
+        OrderProductResponse orderProductResponse = OrderLogicService.getAllProductInfo(temp);
+
         ArrayList<OrderDetail> arr = new ArrayList<>();
         double totalPrice = 0.0;
-        for (int i = 0; i < body.size(); i++) {
-            RequestProductBean item = body.get(i);
+        for (int i = 0; i < orderProductResponse.getData().size() ; i++) {
+            OrderProductInfo item = orderProductResponse.getData().get(i);
             OrderDetail orderDetail = new OrderDetail();
-            orderDetail.setProductId(item.getProductId());
+            orderDetail.setProductId(item.getId());
             orderDetail.setPrice(item.getPrice());
-            orderDetail.setQty(item.getQty());
+            orderDetail.setQty(body.get(i).getQty());
             orderDetail.setCreatedBy(orderCustomerInfo.getUsername());
             orderDetail.setOrderHeader(tempOrderHeader);
 
             arr.add(orderDetail);
-            totalPrice += (item.getPrice() * item.getQty());
+            totalPrice += (item.getPrice() * body.get(i).getQty());
         }
         this.orderDetailRepository.saveAll(arr);
 
