@@ -4,15 +4,13 @@ import com.edts.tdp.batch4.constant.DeliveryFeeMultiplier;
 import com.edts.tdp.batch4.constant.StaticGeoLocation;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
+import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.model.OrderDelivery;
 import com.edts.tdp.batch4.model.OrderHeader;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.opencsv.CSVWriter;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.client.RestTemplate;
@@ -51,7 +49,7 @@ public class OrderLogicService {
         }
     }
 
-    public static OrderCustomerInfo getCustomerInfo(HttpServletRequest httpServletRequest) throws JsonProcessingException {
+    public static OrderCustomerInfo getCustomerInfo(HttpServletRequest httpServletRequest, String path) {
         String authHeader = httpServletRequest.getHeader("Authorization");
         String token = authHeader.substring(7);
         String url = "https://teaching-careful-lioness.ngrok-free.app/api/v1/customer/customer_info";
@@ -65,10 +63,17 @@ public class OrderLogicService {
                                                                 HttpMethod.GET,
                                                                 httpEntity,
                                                                 String.class);
-        ObjectMapper objectMapper = new ObjectMapper();
-        OrderCustomerInfo orderCustomerInfo = objectMapper.readValue(response.getBody(), OrderCustomerInfo.class);
-
-        return orderCustomerInfo;
+        if ( response.getStatusCode().equals(HttpStatus.OK)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            OrderCustomerInfo orderCustomerInfo = null;
+            try {
+                orderCustomerInfo = objectMapper.readValue(response.getBody(), OrderCustomerInfo.class);
+            } catch (JsonProcessingException e) {
+                throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), path);
+            }
+            return orderCustomerInfo;
+        }
+        throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
     }
 
     public static OrderCustomerAddress getCustomerAddress(OrderCustomerInfo orderCustomerInfo) {
