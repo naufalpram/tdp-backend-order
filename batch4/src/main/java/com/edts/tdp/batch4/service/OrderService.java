@@ -55,8 +55,14 @@ public class OrderService {
         this.orderLogicService = orderLogicService;
     }
 
+    /**
+     * @param orderCustomerInfo customer info such as id, username, name, phone, email, and address
+     * @param httpServletRequest to extract headers
+     * @return BaseResponseBean with type CreatedOrderBean
+     */
     public BaseResponseBean<CreatedOrderBean> createOrder(OrderCustomerInfo orderCustomerInfo, HttpServletRequest httpServletRequest) {
         String path = "/order/create";
+        // fetch cart data from customer API and convert it to OrderCartBean
         List<LinkedHashMap<String, Integer>> cartData = orderLogicService.getCartData(httpServletRequest, path);
         List<OrderCartBean> cart = new ArrayList<>();
         for (LinkedHashMap<String, Integer> data : cartData) {
@@ -65,7 +71,6 @@ public class OrderService {
             item.setQuantity(data.get("quantity"));
             cart.add(item);
         }
-
         if(cart.isEmpty()){
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Cart length can't be zero", path);
         }
@@ -75,7 +80,7 @@ public class OrderService {
         DecimalFormat distanceFormat = new DecimalFormat("#.00");
 
         OrderCustomerAddress orderCustomerAddress = this.orderLogicService.getCustomerAddress(orderCustomerInfo);
-
+        // create order header
         OrderHeader orderHeader = new OrderHeader();
         orderHeader.setCustomerId(orderCustomerInfo.getId());
         orderHeader.setCreatedBy(orderCustomerInfo.getUsername());
@@ -88,6 +93,7 @@ public class OrderService {
 
         OrderHeader tempOrderHeader = this.orderHeaderRepository.save(orderHeader);
 
+        // create order delivery
         OrderDelivery orderDelivery = new OrderDelivery();
         orderDelivery.setCreatedBy(orderCustomerInfo.getUsername());
         orderDelivery.setStreet(orderCustomerAddress.getStreet());
@@ -96,12 +102,14 @@ public class OrderService {
         orderDelivery.setLatitude(orderCustomerAddress.getLatitude());
         orderDelivery.setLongitude(orderDelivery.getLongitude());
 
+        // fetch product info of cart from catalog API
         List<Integer> temp = new ArrayList<>();
         for (OrderCartBean orderCartBean : cart) {
             temp.add((int) orderCartBean.getProductId());
         }
         OrderProductResponse orderProductResponse = this.orderLogicService.getAllProductInfo(temp);
 
+        // create each order detail with a combination data of cart and product info
         ArrayList<OrderDetail> arr = new ArrayList<>();
         double totalPrice = 0.0;
         for (int i = 0; i < orderProductResponse.getData().size() ; i++) {
@@ -128,7 +136,7 @@ public class OrderService {
 
         this.orderDetailRepository.saveAll(arr);
 
-        // update products stock via API
+        // set total paid of order header
         tempOrderHeader.setTotalPaid(Double.valueOf(priceFormat.format(tempOrderHeader.getTotalPaid() + totalPrice)));
         tempOrderHeader = this.orderHeaderRepository.save(tempOrderHeader);
 
@@ -147,11 +155,18 @@ public class OrderService {
         response.setMessage(HttpStatus.OK.getReasonPhrase());
         response.setData(orderBean);
 
+        // update stock of products and clear customer's cart
         this.orderLogicService.updateStockProduct(cart, true);
         orderLogicService.clearCartCustomer(httpServletRequest, path);
         return response;
     }
 
+    /**
+     * @param page page number
+     * @param size page size
+     * @param orderCustomerInfo customer info such as id, username, name, phone, email, and address
+     * @return BaseResponseBean with type CreatedOrderBean
+     */
     public BaseResponseBean<Page<CreatedOrderBean>> getAllOrderByCustomerId(int page, int size, OrderCustomerInfo orderCustomerInfo)  {
         String path = "/get-history";
         BaseResponseBean<Page<CreatedOrderBean>> response = new BaseResponseBean<>();
@@ -175,6 +190,14 @@ public class OrderService {
         response.setTimestamp(LocalDateTime.now());
         return response;
     }
+
+    /**
+     * @param status filter by status
+     * @param page page number
+     * @param size page size
+     * @param orderCustomerInfo customer info such as id, username, name, phone, email, and address
+     * @return BaseResponseBean with type CreatedOrderBean
+     */
     public BaseResponseBean<Page<CreatedOrderBean>> findAllByCustomerIdAndStatus(String status,
                                                                             int page,
                                                                             int size,
@@ -201,6 +224,11 @@ public class OrderService {
             return response;
     }
 
+    /**
+     * @param orderNumber unique order number
+     * @param orderCustomerInfo customer info such as id, username, name, phone, email, and address
+     * @return BaseResponseBean of type CreatedOrderBean
+     */
     public BaseResponseBean<CreatedOrderBean> sendOrder(String orderNumber, OrderCustomerInfo orderCustomerInfo){
 
         long customerId = orderCustomerInfo.getId();
@@ -237,6 +265,11 @@ public class OrderService {
         return orderBean;
     }
 
+    /**
+     * @param orderNumber unique order number
+     * @param orderCustomerInfo customer info such as id, username, name, phone, email, and address
+     * @return BaseResponseBean of type CreatedOrderBean
+     */
     public BaseResponseBean<CreatedOrderBean> cancelOrder(String orderNumber, OrderCustomerInfo orderCustomerInfo){
         String path = "update/cancel";
         BaseResponseBean<CreatedOrderBean> orderBean = new BaseResponseBean<>();
@@ -274,6 +307,7 @@ public class OrderService {
         orderBean.setCode(200);
         orderBean.setTimestamp(LocalDateTime.now());
 
+        // update stock of products because of cancellation
         List<OrderCartBean> products = new ArrayList<>();
         for (OrderDetail item : orderHeader.getOrderDetailList()) {
             OrderCartBean cart = new OrderCartBean();
@@ -285,6 +319,11 @@ public class OrderService {
         return orderBean;
     }
 
+    /**
+     * @param orderNumber unique order number
+     * @param orderCustomerInfo customer info such as id, username, name, phone, email, and address
+     * @return BaseResponseBean of type CreatedOrderBean
+     */
     public BaseResponseBean<CreatedOrderBean> returnOrder(String orderNumber, OrderCustomerInfo orderCustomerInfo){
         String path = "update/return";
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
@@ -306,8 +345,6 @@ public class OrderService {
         orderHeader.setModifiedBy(orderHeader.getCreatedBy());
         this.orderHeaderRepository.save(orderHeader);
 
-        // update stock via API
-
         CreatedOrderBean createdOrderBean = new CreatedOrderBean();
         createdOrderBean.setStatus(Status.RETURNED);
         createdOrderBean.setOrderNumber(orderNumber);
@@ -321,6 +358,7 @@ public class OrderService {
         response.setCode(200);
         response.setTimestamp(LocalDateTime.now());
 
+        // update stock of products because of return
         List<OrderCartBean> products = new ArrayList<>();
         for (OrderDetail item : orderHeader.getOrderDetailList()) {
             OrderCartBean cart = new OrderCartBean();
@@ -332,6 +370,11 @@ public class OrderService {
         return response;
     }
 
+    /**
+     * @param orderNumber unique order number
+     * @param orderCustomerInfo customer info such as id, username, name, phone, email, and address
+     * @return BaseResponseBean of type FullOrderInfoBean
+     */
     public BaseResponseBean<FullOrderInfoBean> getFullOrderInfo(String orderNumber, OrderCustomerInfo orderCustomerInfo) {
         String path = "/detail";
         BaseResponseBean<FullOrderInfoBean> response = new BaseResponseBean<>();
@@ -354,7 +397,7 @@ public class OrderService {
         infoBean.setPostalCode(data.getOrderDelivery().getPostCode());
         infoBean.setDistanceInKm(data.getOrderDelivery().getDistanceInKm());
 
-        // get product info api for below list
+        // fetch product info from catalog API
         List<OrderDetail> orderDetailList = data.getOrderDetailList();
         List<Integer> temp = new ArrayList<>();
         for (OrderDetail orderDetail : orderDetailList) {
@@ -372,6 +415,11 @@ public class OrderService {
         return response;
     }
 
+    /**
+     * @param orderProductResponse bean to convert into orderDetailBean
+     * @param orderDetailList orderDetails from orderHeader
+     * @return List of OrderDetailBean
+     */
     private static List<OrderDetailBean> getOrderDetailBeans(OrderProductResponse orderProductResponse, List<OrderDetail> orderDetailList) {
         List<OrderDetailBean> detailsBean = new ArrayList<>();
         for (int i = 0; i < orderProductResponse.getData().size(); i++) {
@@ -388,6 +436,10 @@ public class OrderService {
         return detailsBean;
     }
 
+    /**
+     * @param status filter status of order
+     * @return BaseResponseBean of type String for the data
+     */
     public BaseResponseBean<String> generateCsvReport(String status) {
         String path = "/generate-report";
         try {
@@ -414,6 +466,11 @@ public class OrderService {
         return response;
     }
 
+    /**
+     * @param orderNumber unique order number
+     * @param orderCustomerInfo customer info such as id, username, name, phone, email, and address
+     * @return BaseResponseBean of type CreatedOrderBean
+     */
     public BaseResponseBean<CreatedOrderBean> updateOrderDelivered(String orderNumber, OrderCustomerInfo orderCustomerInfo) {
         String path = "/update/delivered";
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
@@ -450,8 +507,7 @@ public class OrderService {
         response.setCode(200);
         response.setTimestamp(LocalDateTime.now());
 
-
-        // get product info api for htmlContent arr list
+        // fetch product info from catalog API for htmlContent data
         List<OrderDetail> orderDetailList = orderHeader.getOrderDetailList();
         List<Integer> temp = new ArrayList<>();
         for (OrderDetail orderDetail : orderDetailList) {
