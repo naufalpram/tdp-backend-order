@@ -1,5 +1,6 @@
 package com.edts.tdp.batch4.service;
 
+import com.edts.tdp.batch4.bean.catalog.OrderProductInfo;
 import com.edts.tdp.batch4.bean.catalog.OrderProductResponse;
 import com.edts.tdp.batch4.bean.catalog.OrderStockUpdate;
 import com.edts.tdp.batch4.bean.customer.OrderCartBean;
@@ -9,6 +10,7 @@ import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
 import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.model.OrderDelivery;
+import com.edts.tdp.batch4.model.OrderDetail;
 import com.edts.tdp.batch4.model.OrderHeader;
 import com.edts.tdp.batch4.utils.JwtUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -102,32 +104,26 @@ public class OrderLogicService {
     }
 
     public static StringWriter createCsv(List<OrderHeader> orders) {
-        OrderDelivery defaultDelivery = new OrderDelivery();
-        defaultDelivery.setDistanceInKm(199);
-        defaultDelivery.setStreet("Jl. Pegangsaan Timur no.99, Sudirman");
-        defaultDelivery.setProvince("DKI Jakarta");
-
         StringWriter stringWriter = new StringWriter();
 
         CSVWriter csvWriter = new CSVWriter(stringWriter,';'
                 ,CSVWriter.NO_QUOTE_CHARACTER,CSVWriter.DEFAULT_ESCAPE_CHARACTER
                 ,CSVWriter.DEFAULT_LINE_END);
 
-        final String CSV_HEADER = "Order Id,Order Number,Nama Customer,Alamat,Jarak,Total Pembayaran,Status";
+        final String CSV_HEADER = "Order Id,Order Number,Username,Alamat,Jarak,Total Pembayaran,Status";
         csvWriter.writeNext(CSV_HEADER.split(","));
 
         for(OrderHeader orderHeader:orders){
-            OrderDelivery delivery = orderHeader.getOrderDelivery() == null ? defaultDelivery : orderHeader.getOrderDelivery();
             String orderNumber = orderHeader.getOrderNumber() == null ? "" : orderHeader.getOrderNumber();
-            String street = delivery.getStreet() == null ? "" : delivery.getStreet();
-            String province = delivery.getProvince() == null ? "" : delivery.getProvince();
+            OrderDelivery checked = checkOrderDelivery(orderHeader.getOrderDelivery());
 
-            String address = String.format("%s, %s", street, province);
-            String distance = String.format("%.2f", delivery.getDistanceInKm());
+            String address = checked.getStreet().isEmpty() || checked.getProvince().isEmpty() ? "Incomplete Address"
+                    : String.format("%s, %s", checked.getStreet(), checked.getProvince());
+            String distance = String.format("%.2f", checked.getDistanceInKm());
             String totalPaid = String.format("%.2f", orderHeader.getTotalPaid());
             csvWriter.writeNext(new String[]{
                     String.valueOf(orderHeader.getId()), orderNumber,
-                    "dummy", address, distance, totalPaid, orderHeader.getStatus()
+                    orderHeader.getCreatedBy(), address, distance, totalPaid, orderHeader.getStatus()
             });
         }
 
@@ -140,7 +136,6 @@ public class OrderLogicService {
         String url = "https://proud-mongoose-shortly.ngrok-free.app/api/v1/catalog/order/product";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        String requestBody = arrayProduct.toString();
         HttpEntity<List<Integer>> httpEntity = new HttpEntity<>(arrayProduct, headers);
 
         RestTemplate restTemplate = new RestTemplate();
@@ -148,6 +143,51 @@ public class OrderLogicService {
         OrderProductResponse response = restTemplate.postForObject(url, httpEntity, OrderProductResponse.class);
         return response;
     }
+
+    public static String orderReportHtml(OrderHeader orderHeader, OrderProductResponse productDetails) {
+        if (orderHeader == null)
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "No order", "/update/deliver");
+        List<OrderDetail> list = orderHeader.getOrderDetailList();
+        String htmlContent = "";
+        StringBuilder productListStr = new StringBuilder();
+        for (int i = 0; i < productDetails.getData().size(); i++) {
+            OrderProductInfo item = productDetails.getData().get(i);
+            productListStr.append(String.format("""
+                        <li>
+                           <p>%s %dx | Rp%.2f</p>
+                        </li>
+                    """, item.getProductName(), list.get(i).getQty(), item.getPrice() * list.get(i).getQty()));
+        }
+        htmlContent += String.format("""
+                    <html>
+                      <body>
+                        <h1>Your Order Report</h1>
+                        <div>
+                          <h4>Order Number: %s</h4>
+                          <h4>Total Paid: Rp%.2f</h4>
+                          <ul>
+                            %s
+                          </ul>
+                        </div>
+                      </body>
+                    </html>
+                """, orderHeader.getOrderNumber(), orderHeader.getTotalPaid(), productListStr);
+        return htmlContent;
+    }
+
+    private static OrderDelivery checkOrderDelivery(OrderDelivery toCheck) {
+        OrderDelivery newOrder = new OrderDelivery();
+        newOrder.setStreet("");
+        newOrder.setProvince("");
+        newOrder.setDistanceInKm(0);
+        if (toCheck != null) {
+            if (toCheck.getStreet() != null) newOrder.setStreet(toCheck.getStreet());
+            if (toCheck.getProvince() != null) newOrder.setProvince(toCheck.getProvince());
+            newOrder.setDistanceInKm(toCheck.getDistanceInKm());
+        }
+        return newOrder;
+    }
+
 
     public static OrderStockUpdate updateStockProduct(List<OrderCartBean> arrayProduct, boolean isCreate) {
         if (isCreate) {
