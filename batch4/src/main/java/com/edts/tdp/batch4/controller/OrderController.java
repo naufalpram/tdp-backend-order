@@ -1,11 +1,10 @@
 package com.edts.tdp.batch4.controller;
 
 import com.edts.tdp.batch4.bean.BaseResponseBean;
+import com.edts.tdp.batch4.bean.customer.OrderCartBean;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerInfo;
-import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
 import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
-import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.service.OrderLogicService;
 import com.edts.tdp.batch4.service.OrderService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,12 +29,11 @@ public class OrderController {
     OrderLogicService orderLogicService;
 
     @PostMapping("/create")
-    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(@RequestBody List<RequestProductBean> body,
-                                                                          HttpServletRequest httpServletRequest) {
+    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(HttpServletRequest httpServletRequest) {
         // validate customer
         OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/create");
         BaseResponseBean<CreatedOrderBean> response;
-        response = orderService.createOrder(body, orderCustomerInfo);
+        response = orderService.createOrder(orderCustomerInfo, httpServletRequest);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

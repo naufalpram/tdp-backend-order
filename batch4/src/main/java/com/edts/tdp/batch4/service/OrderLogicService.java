@@ -2,6 +2,8 @@ package com.edts.tdp.batch4.service;
 
 import com.edts.tdp.batch4.bean.catalog.OrderProductInfo;
 import com.edts.tdp.batch4.bean.catalog.OrderProductResponse;
+import com.edts.tdp.batch4.bean.catalog.OrderStockUpdate;
+import com.edts.tdp.batch4.bean.customer.OrderCartBean;
 import com.edts.tdp.batch4.constant.DeliveryFeeMultiplier;
 import com.edts.tdp.batch4.constant.StaticGeoLocation;
 import com.edts.tdp.batch4.bean.customer.OrderCustomerAddress;
@@ -21,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.StringWriter;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 @Service
@@ -184,4 +187,75 @@ public class OrderLogicService {
         return newOrder;
     }
 
+
+    public static OrderStockUpdate updateStockProduct(List<OrderCartBean> arrayProduct, boolean isCreate) {
+        if (isCreate) {
+            for (OrderCartBean product : arrayProduct) {
+                product.setQuantity(product.getQuantity() * -1);
+            }
+        }
+        String url = "https://proud-mongoose-shortly.ngrok-free.app/api/v1/catalog/order/update";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<List<OrderCartBean>> httpEntity = new HttpEntity<>(arrayProduct, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        OrderStockUpdate response = restTemplate.postForObject(url, httpEntity, OrderStockUpdate.class);
+        return response;
+    }
+
+    public List<LinkedHashMap<String,Integer>> getCartData(HttpServletRequest httpServletRequest, String path) {
+        String authHeader = httpServletRequest.getHeader("Authorization");
+        String token = authHeader.substring(7);
+
+        Boolean isValidToken = jwtUtil.validateToken(token, path);
+
+        if ( !isValidToken ) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Token", path);
+        }
+        String url = "https://teaching-careful-lioness.ngrok-free.app/api/v1/customer/order_cart";
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.set("Authorization", authHeader);
+
+        HttpEntity<String> httpEntity = new HttpEntity<>(httpHeaders);
+        RestTemplate restTemplate = new RestTemplate();
+
+        ResponseEntity<String> response = restTemplate.exchange(url,
+                                                                HttpMethod.GET,
+                                                                httpEntity,
+                                                                String.class);
+        if ( response.getStatusCode().equals(HttpStatus.OK)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            try {
+                return objectMapper.readValue(response.getBody(), List.class);
+            } catch (JsonProcessingException e) {
+                throw new OrderCustomException(HttpStatus.BAD_REQUEST, e.getMessage(), path);
+            }
+        }
+        throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
+    }
+
+    public Boolean clearCartCustomer(HttpServletRequest httpServletRequest, String path) {
+        String authHeader = httpServletRequest.getHeader("Authorization");
+        String token = authHeader.substring(7);
+
+        Boolean isValidToken = jwtUtil.validateToken(token, path);
+
+        if ( !isValidToken ) {
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Token", path);
+        }
+        String url = "https://teaching-careful-lioness.ngrok-free.app/api/v1/customer/clear_cart";
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.set("Authorization", authHeader);
+
+        HttpEntity<String> httpEntity = new HttpEntity<>(httpHeaders);
+        RestTemplate restTemplate = new RestTemplate();
+
+        ResponseEntity<String> response = restTemplate.exchange(url,
+                                                                HttpMethod.POST,
+                                                                httpEntity,
+                                                                String.class);
+        return response.getStatusCode().equals(HttpStatus.OK);
+    }
 }
