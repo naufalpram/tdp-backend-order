@@ -28,6 +28,7 @@ import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,11 +54,19 @@ public class OrderService {
         this.orderLogicService = orderLogicService;
     }
 
-    public BaseResponseBean<CreatedOrderBean> createOrder(List<OrderCartBean> body, OrderCustomerInfo orderCustomerInfo, HttpServletRequest httpServletRequest) {
+    public BaseResponseBean<CreatedOrderBean> createOrder(OrderCustomerInfo orderCustomerInfo, HttpServletRequest httpServletRequest) {
         String path = "/order/create";
-        List<OrderCartBean> cartData = orderLogicService.getCartData(httpServletRequest, path);
-        if(body.isEmpty()){
-            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body length can't be zero", path);
+        List<LinkedHashMap<String, Integer>> cartData = orderLogicService.getCartData(httpServletRequest, path);
+        List<OrderCartBean> cart = new ArrayList<>();
+        for (LinkedHashMap<String, Integer> data : cartData) {
+            OrderCartBean item = new OrderCartBean();
+            item.setProductId(data.get("productId"));
+            item.setQuantity(data.get("quantity"));
+            cart.add(item);
+        }
+
+        if(cart.isEmpty()){
+            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Cart length can't be zero", path);
         }
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
         DecimalFormat priceFormat = new DecimalFormat("#.##");
@@ -87,8 +96,8 @@ public class OrderService {
         orderDelivery.setLongitude(orderDelivery.getLongitude());
 
         List<Integer> temp = new ArrayList<>();
-        for (int i = 0; i < body.size(); i++) {
-            temp.add(Math.toIntExact(body.get(i).getProductId()));
+        for (int i = 0; i < cart.size(); i++) {
+            temp.add((int) cart.get(i).getProductId());
         }
         OrderProductResponse orderProductResponse = OrderLogicService.getAllProductInfo(temp);
 
@@ -96,21 +105,22 @@ public class OrderService {
         double totalPrice = 0.0;
         for (int i = 0; i < orderProductResponse.getData().size() ; i++) {
             OrderProductInfo item = orderProductResponse.getData().get(i);
-            if ( item.getStock() < body.get(i).getQuantity() ) {
-                continue;
+            if ( item.getStock() < cart.get(i).getQuantity() ) {
+                this.orderHeaderRepository.delete(tempOrderHeader);
+                throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Stock of Product", path);
             }
             OrderDetail orderDetail = new OrderDetail();
             orderDetail.setProductId(item.getId());
             orderDetail.setPrice(item.getPrice());
-            orderDetail.setQty(body.get(i).getQuantity());
+            orderDetail.setQty(cart.get(i).getQuantity());
             orderDetail.setCreatedBy(orderCustomerInfo.getUsername());
             orderDetail.setOrderHeader(tempOrderHeader);
 
             arr.add(orderDetail);
-            totalPrice += (item.getPrice() * body.get(i).getQuantity());
+            totalPrice += (item.getPrice() * cart.get(i).getQuantity());
         }
         // if all product stock are empty
-        if (arr.size() == 0) {
+        if (arr.isEmpty()) {
             this.orderHeaderRepository.delete(tempOrderHeader);
             throw new OrderCustomException(HttpStatus.NO_CONTENT, "Empty products, please add product with available stock", path);
         }
@@ -135,7 +145,8 @@ public class OrderService {
         response.setMessage(HttpStatus.OK.getReasonPhrase());
         response.setData(orderBean);
 
-//        OrderLogicService.updateStockProduct(cartData);
+        OrderLogicService.updateStockProduct(cart, true);
+        orderLogicService.clearCartCustomer(httpServletRequest, path);
         return response;
     }
 
@@ -265,6 +276,15 @@ public class OrderService {
         orderBean.setMessage(HttpStatus.OK.getReasonPhrase());
         orderBean.setCode(200);
         orderBean.setTimestamp(LocalDateTime.now());
+
+        List<OrderCartBean> products = new ArrayList<>();
+        for (OrderDetail item : orderHeader.getOrderDetailList()) {
+            OrderCartBean cart = new OrderCartBean();
+            cart.setProductId(item.getProductId());
+            cart.setQuantity(item.getQty());
+            products.add(cart);
+        }
+        OrderLogicService.updateStockProduct(products, false);
         return orderBean;
     }
 
@@ -302,6 +322,15 @@ public class OrderService {
         response.setMessage(HttpStatus.OK.getReasonPhrase());
         response.setCode(200);
         response.setTimestamp(LocalDateTime.now());
+
+        List<OrderCartBean> products = new ArrayList<>();
+        for (OrderDetail item : orderHeader.getOrderDetailList()) {
+            OrderCartBean cart = new OrderCartBean();
+            cart.setProductId(item.getProductId());
+            cart.setQuantity(item.getQty());
+            products.add(cart);
+        }
+        OrderLogicService.updateStockProduct(products, false);
         return response;
     }
 

@@ -28,12 +28,11 @@ public class OrderController {
     OrderLogicService orderLogicService;
 
     @PostMapping("/create")
-    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(@RequestBody List<OrderCartBean> body,
-                                                                          HttpServletRequest httpServletRequest) {
+    public ResponseEntity<BaseResponseBean<CreatedOrderBean>> createOrder(HttpServletRequest httpServletRequest) {
         // validate customer
         OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/create");
         BaseResponseBean<CreatedOrderBean> response;
-        response = orderService.createOrder(body, orderCustomerInfo, httpServletRequest);
+        response = orderService.createOrder(orderCustomerInfo, httpServletRequest);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
