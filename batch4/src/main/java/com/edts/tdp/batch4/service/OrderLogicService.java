@@ -36,6 +36,11 @@ public class OrderLogicService {
         this.jwtUtil = jwtUtil;
     }
 
+    /**
+     * @param lat latitude
+     * @param lon longitude
+     * @return distance
+     */
     public double distanceCounter(double lat, double lon ) {
         // Conversi sudut ke Radiant
         double radLat1 = Math.toRadians(StaticGeoLocation.LATITUDE);
@@ -56,6 +61,10 @@ public class OrderLogicService {
         return constant * StaticGeoLocation.EARTH_RADIUS;
     }
 
+    /**
+     * @param distance distance of customer
+     * @return delivery fee
+     */
     public double deliveryCost(double distance) {
         if ( distance <= 200) {
             return (distance/4) * DeliveryFeeMultiplier.UNDER_200;
@@ -64,6 +73,11 @@ public class OrderLogicService {
         }
     }
 
+    /**
+     * @param httpServletRequest to extract headers
+     * @param path endpoint path
+     * @return OrderCustomer info that contains customer info such as id, username, name, phone, email, and address
+     */
     public OrderCustomerInfo getCustomerInfo(HttpServletRequest httpServletRequest, String path) {
         String authHeader = httpServletRequest.getHeader("Authorization");
         String token = authHeader.substring(7);
@@ -100,6 +114,10 @@ public class OrderLogicService {
         return orderCustomerInfo.getAddress();
     }
 
+    /**
+     * @param orders List of order headers
+     * @return StringWriter
+     */
     public StringWriter createCsv(List<OrderHeader> orders) {
         StringWriter stringWriter = new StringWriter();
 
@@ -129,6 +147,27 @@ public class OrderLogicService {
         return stringWriter;
     }
 
+    /**
+     * @param toCheck to be checked order delivery
+     * @return OrderDelivery with not null attributes
+     */
+    private OrderDelivery checkOrderDelivery(OrderDelivery toCheck) {
+        OrderDelivery newOrder = new OrderDelivery();
+        newOrder.setStreet("");
+        newOrder.setProvince("");
+        newOrder.setDistanceInKm(0);
+        if (toCheck != null) {
+            if (toCheck.getStreet() != null) newOrder.setStreet(toCheck.getStreet());
+            if (toCheck.getProvince() != null) newOrder.setProvince(toCheck.getProvince());
+            newOrder.setDistanceInKm(toCheck.getDistanceInKm());
+        }
+        return newOrder;
+    }
+
+    /**
+     * @param arrayProduct List that contains productIds
+     * @return OrderProductResponse bean
+     */
     public OrderProductResponse getAllProductInfo(List<Integer> arrayProduct) {
         String url = "https://proud-mongoose-shortly.ngrok-free.app/api/v1/catalog/order/product";
         HttpHeaders headers = new HttpHeaders();
@@ -140,6 +179,11 @@ public class OrderLogicService {
         return restTemplate.postForObject(url, httpEntity, OrderProductResponse.class);
     }
 
+    /**
+     * @param orderHeader order header
+     * @param productDetails product detail from catalog API
+     * @return String of html content
+     */
     public String orderReportHtml(OrderHeader orderHeader, OrderProductResponse productDetails) {
         if (orderHeader == null)
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "No order", "/update/deliver");
@@ -171,20 +215,11 @@ public class OrderLogicService {
         return htmlContent;
     }
 
-    private OrderDelivery checkOrderDelivery(OrderDelivery toCheck) {
-        OrderDelivery newOrder = new OrderDelivery();
-        newOrder.setStreet("");
-        newOrder.setProvince("");
-        newOrder.setDistanceInKm(0);
-        if (toCheck != null) {
-            if (toCheck.getStreet() != null) newOrder.setStreet(toCheck.getStreet());
-            if (toCheck.getProvince() != null) newOrder.setProvince(toCheck.getProvince());
-            newOrder.setDistanceInKm(toCheck.getDistanceInKm());
-        }
-        return newOrder;
-    }
-
-
+    /**
+     * @param arrayProduct List of OrderCartBean
+     * @param isCreate checker if the method intended to add or subtract stock
+     * @return boolean
+     */
     public boolean updateStockProduct(List<OrderCartBean> arrayProduct, boolean isCreate) {
         if (isCreate) {
             for (OrderCartBean product : arrayProduct) {
@@ -204,6 +239,11 @@ public class OrderLogicService {
         else return false;
     }
 
+    /**
+     * @param httpServletRequest to extract headers
+     * @param path endpoint path
+     * @return List of data that contains productId and quantity attributes
+     */
     public List<LinkedHashMap<String,Integer>> getCartData(HttpServletRequest httpServletRequest, String path) {
         String authHeader = httpServletRequest.getHeader("Authorization");
         String token = authHeader.substring(7);
@@ -235,6 +275,11 @@ public class OrderLogicService {
         throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
     }
 
+    /**
+     * @param httpServletRequest to extract headers
+     * @param path endpoint path
+     * @return boolean
+     */
     public boolean clearCartCustomer(HttpServletRequest httpServletRequest, String path) {
         String authHeader = httpServletRequest.getHeader("Authorization");
         String token = authHeader.substring(7);
