@@ -23,6 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.StringWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -198,6 +200,8 @@ public class OrderLogicService {
                         </li>
                     """, item.getProductName(), list.get(i).getQty(), item.getPrice() * list.get(i).getQty()));
         }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+        String deliveredAt = orderHeader.getModifiedAt().format(formatter);
         htmlContent += String.format("""
                     <html>
                       <body>
@@ -208,10 +212,11 @@ public class OrderLogicService {
                           <ul>
                             %s
                           </ul>
+                          <h4>Delivered at: %s
                         </div>
                       </body>
                     </html>
-                """, orderHeader.getOrderNumber(), orderHeader.getTotalPaid(), productListStr);
+                """, orderHeader.getOrderNumber(), orderHeader.getTotalPaid(), productListStr, deliveredAt);
         return htmlContent;
     }
 
