@@ -20,6 +20,13 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    /**
+     * @param toEmail where to send email
+     * @param subject subject of email
+     * @param body body of email
+     * @param csvData csv data to be attached
+     * @throws MessagingException exception on creating email
+     */
     public void sendEmailToAdmin(String toEmail, String subject, String body, StringWriter csvData) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
@@ -59,6 +66,12 @@ public class EmailService {
         mailSender.send(message);
     }
 
+    /**
+     * @param toEmail where to send email
+     * @param subject subject of email
+     * @param htmlContent html content of email
+     * @throws MessagingException exception on creating email
+     */
     public void sendEmailToCustomer(String toEmail, String subject, String htmlContent) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper;
