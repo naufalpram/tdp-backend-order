@@ -6,8 +6,8 @@ import lombok.Data;
 public class OrderDetailBean {
     private Long id;
     private Long productId;
-    private int qty;
+    private String name;
+    private int quantity;
     private String price;
     private String productImage;
-    // tambahin name
 }

@@ -326,14 +326,21 @@ public class OrderService {
 
         // get product info api for below list
         List<OrderDetail> orderDetailList = data.getOrderDetailList();
+        List<Integer> temp = new ArrayList<>();
+        for (int i = 0; i < orderDetailList.size(); i++) {
+            temp.add(Math.toIntExact(orderDetailList.get(i).getProductId()));
+        }
+        OrderProductResponse orderProductResponse = OrderLogicService.getAllProductInfo(temp);
         List<OrderDetailBean> detailsBean = new ArrayList<>();
-        for (OrderDetail item : orderDetailList) {
+        for (int i = 0; i < orderProductResponse.getData().size(); i++) {
+            OrderProductInfo item = orderProductResponse.getData().get(i);
             OrderDetailBean orderDetailBean = new OrderDetailBean();
-            orderDetailBean.setId(item.getId());
-            orderDetailBean.setProductId(item.getProductId());
-            orderDetailBean.setQty(item.getQty());
+            orderDetailBean.setId(orderDetailList.get(i).getId());
+            orderDetailBean.setProductId(item.getId());
+            orderDetailBean.setName(item.getProductName());
+            orderDetailBean.setQuantity(orderDetailList.get(i).getQty());
             orderDetailBean.setPrice(String.format("%.2f", item.getPrice()));
-            orderDetailBean.setProductImage("placeholder image");
+            orderDetailBean.setProductImage(item.getProductImage());
             detailsBean.add(orderDetailBean);
         }
         infoBean.setOrderDetailList(detailsBean);
