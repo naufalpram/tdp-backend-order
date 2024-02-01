@@ -14,8 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -121,7 +119,7 @@ public class OrderController {
     }
 
     @GetMapping("/generate-report/{status}")
-    public ResponseEntity<BaseResponseBean<String>> generateOrderReport(@PathVariable String status) throws IOException {
+    public ResponseEntity<BaseResponseBean<String>> generateOrderReport(@PathVariable String status) {
         BaseResponseBean<String> response = orderService.generateCsvReport(status);
         return new ResponseEntity<>(response, HttpStatus.OK);   
     }

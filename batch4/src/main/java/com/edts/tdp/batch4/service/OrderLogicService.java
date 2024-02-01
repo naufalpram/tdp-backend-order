@@ -36,7 +36,7 @@ public class OrderLogicService {
         this.jwtUtil = jwtUtil;
     }
 
-    public static double distanceCounter(double lat, double lon ) {
+    public double distanceCounter(double lat, double lon ) {
         // Conversi sudut ke Radiant
         double radLat1 = Math.toRadians(StaticGeoLocation.LATITUDE);
         double radLat2 = Math.toRadians(lat);
@@ -53,15 +53,14 @@ public class OrderLogicService {
 
         double constant = 2 * Math.atan2(Math.sqrt(variable), Math.sqrt(1-variable));
 
-        double distance = constant * StaticGeoLocation.EARTH_RADIUS;
-        return distance;
+        return constant * StaticGeoLocation.EARTH_RADIUS;
     }
 
-    public static double deliveryCost(double distance) {
+    public double deliveryCost(double distance) {
         if ( distance <= 200) {
-            return distance * DeliveryFeeMultiplier.UNDER_200;
+            return (distance/4) * DeliveryFeeMultiplier.UNDER_200;
         } else {
-            return distance * DeliveryFeeMultiplier.OVER_200;
+            return (distance/4) * DeliveryFeeMultiplier.OVER_200;
         }
     }
 
@@ -69,7 +68,7 @@ public class OrderLogicService {
         String authHeader = httpServletRequest.getHeader("Authorization");
         String token = authHeader.substring(7);
 
-        Boolean isValidToken = jwtUtil.validateToken(token, path);
+        boolean isValidToken = jwtUtil.validateToken(token, path);
 
         if ( !isValidToken ) {
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Token", path);
@@ -97,12 +96,11 @@ public class OrderLogicService {
         throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
     }
 
-    public static OrderCustomerAddress getCustomerAddress(OrderCustomerInfo orderCustomerInfo) {
-        OrderCustomerAddress orderCustomerAddress = orderCustomerInfo.getAddress();
-        return orderCustomerAddress;
+    public OrderCustomerAddress getCustomerAddress(OrderCustomerInfo orderCustomerInfo) {
+        return orderCustomerInfo.getAddress();
     }
 
-    public static StringWriter createCsv(List<OrderHeader> orders) {
+    public StringWriter createCsv(List<OrderHeader> orders) {
         StringWriter stringWriter = new StringWriter();
 
         CSVWriter csvWriter = new CSVWriter(stringWriter,';'
@@ -131,7 +129,7 @@ public class OrderLogicService {
         return stringWriter;
     }
 
-    public static OrderProductResponse getAllProductInfo(List<Integer> arrayProduct) {
+    public OrderProductResponse getAllProductInfo(List<Integer> arrayProduct) {
         String url = "https://proud-mongoose-shortly.ngrok-free.app/api/v1/catalog/order/product";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -139,11 +137,10 @@ public class OrderLogicService {
 
         RestTemplate restTemplate = new RestTemplate();
 
-        OrderProductResponse response = restTemplate.postForObject(url, httpEntity, OrderProductResponse.class);
-        return response;
+        return restTemplate.postForObject(url, httpEntity, OrderProductResponse.class);
     }
 
-    public static String orderReportHtml(OrderHeader orderHeader, OrderProductResponse productDetails) {
+    public String orderReportHtml(OrderHeader orderHeader, OrderProductResponse productDetails) {
         if (orderHeader == null)
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "No order", "/update/deliver");
         List<OrderDetail> list = orderHeader.getOrderDetailList();
@@ -174,7 +171,7 @@ public class OrderLogicService {
         return htmlContent;
     }
 
-    private static OrderDelivery checkOrderDelivery(OrderDelivery toCheck) {
+    private OrderDelivery checkOrderDelivery(OrderDelivery toCheck) {
         OrderDelivery newOrder = new OrderDelivery();
         newOrder.setStreet("");
         newOrder.setProvince("");
@@ -188,7 +185,7 @@ public class OrderLogicService {
     }
 
 
-    public static OrderStockUpdate updateStockProduct(List<OrderCartBean> arrayProduct, boolean isCreate) {
+    public boolean updateStockProduct(List<OrderCartBean> arrayProduct, boolean isCreate) {
         if (isCreate) {
             for (OrderCartBean product : arrayProduct) {
                 product.setQuantity(product.getQuantity() * -1);
@@ -202,14 +199,16 @@ public class OrderLogicService {
         RestTemplate restTemplate = new RestTemplate();
 
         OrderStockUpdate response = restTemplate.postForObject(url, httpEntity, OrderStockUpdate.class);
-        return response;
+        if (response != null)
+            return response.getStatus().equals("OK");
+        else return false;
     }
 
     public List<LinkedHashMap<String,Integer>> getCartData(HttpServletRequest httpServletRequest, String path) {
         String authHeader = httpServletRequest.getHeader("Authorization");
         String token = authHeader.substring(7);
 
-        Boolean isValidToken = jwtUtil.validateToken(token, path);
+        boolean isValidToken = jwtUtil.validateToken(token, path);
 
         if ( !isValidToken ) {
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Token", path);
@@ -236,11 +235,11 @@ public class OrderLogicService {
         throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
     }
 
-    public Boolean clearCartCustomer(HttpServletRequest httpServletRequest, String path) {
+    public boolean clearCartCustomer(HttpServletRequest httpServletRequest, String path) {
         String authHeader = httpServletRequest.getHeader("Authorization");
         String token = authHeader.substring(7);
 
-        Boolean isValidToken = jwtUtil.validateToken(token, path);
+        boolean isValidToken = jwtUtil.validateToken(token, path);
 
         if ( !isValidToken ) {
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Token", path);

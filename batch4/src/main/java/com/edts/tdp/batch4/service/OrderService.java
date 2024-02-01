@@ -25,7 +25,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
@@ -70,22 +69,18 @@ public class OrderService {
         if(cart.isEmpty()){
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Cart length can't be zero", path);
         }
+
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
         DecimalFormat priceFormat = new DecimalFormat("#.##");
         DecimalFormat distanceFormat = new DecimalFormat("#.00");
 
-        // get cart data customer API
-        if(cart.isEmpty()){
-            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body length can't be zero", path);
-        }
-
-        OrderCustomerAddress orderCustomerAddress = OrderLogicService.getCustomerAddress(orderCustomerInfo);
+        OrderCustomerAddress orderCustomerAddress = this.orderLogicService.getCustomerAddress(orderCustomerInfo);
 
         OrderHeader orderHeader = new OrderHeader();
         orderHeader.setCustomerId(orderCustomerInfo.getId());
         orderHeader.setCreatedBy(orderCustomerInfo.getUsername());
-        double distance = OrderLogicService.distanceCounter(orderCustomerAddress.getLatitude(), orderCustomerAddress.getLongitude());
-        orderHeader.setTotalPaid(OrderLogicService.deliveryCost(distance));
+        double distance = this.orderLogicService.distanceCounter(orderCustomerAddress.getLatitude(), orderCustomerAddress.getLongitude());
+        orderHeader.setTotalPaid(this.orderLogicService.deliveryCost(distance));
         Optional<OrderHeader> cek = this.orderHeaderRepository.findByOrderNumber(orderHeader.getOrderNumber());
 
         if (cek.isPresent())
@@ -102,10 +97,10 @@ public class OrderService {
         orderDelivery.setLongitude(orderDelivery.getLongitude());
 
         List<Integer> temp = new ArrayList<>();
-        for (int i = 0; i < cart.size(); i++) {
-            temp.add((int) cart.get(i).getProductId());
+        for (OrderCartBean orderCartBean : cart) {
+            temp.add((int) orderCartBean.getProductId());
         }
-        OrderProductResponse orderProductResponse = OrderLogicService.getAllProductInfo(temp);
+        OrderProductResponse orderProductResponse = this.orderLogicService.getAllProductInfo(temp);
 
         ArrayList<OrderDetail> arr = new ArrayList<>();
         double totalPrice = 0.0;
@@ -152,7 +147,7 @@ public class OrderService {
         response.setMessage(HttpStatus.OK.getReasonPhrase());
         response.setData(orderBean);
 
-        OrderLogicService.updateStockProduct(cart, true);
+        this.orderLogicService.updateStockProduct(cart, true);
         orderLogicService.clearCartCustomer(httpServletRequest, path);
         return response;
     }
@@ -164,8 +159,6 @@ public class OrderService {
 
         long customerId = orderCustomerInfo.getId();
 
-        if (orderCustomerInfo == null) throw new OrderCustomException(HttpStatus.BAD_REQUEST,
-                "Invalid Customer Id", path);
         if (page < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST,
                 "Invalid page: must be a 0 or a positive int", path);
 
@@ -191,13 +184,10 @@ public class OrderService {
 
         long customerId = orderCustomerInfo.getId();
 
-        if ( orderCustomerInfo == null ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
         if ( page < 0 ) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Page Number", path);
         BaseResponseBean<Page<CreatedOrderBean>> response = new BaseResponseBean<>();
 
         if (customerId < 0) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
-        if (page < 0)
-            throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid page: must be a 0 or a positive int", path);
 
         Page<CreatedOrderBean> headerData = this.orderHeaderRepository.findAllByCustomerIdAndStatus(customerId, status, pageable);
         if (headerData.isEmpty()) {
@@ -217,8 +207,6 @@ public class OrderService {
 
         String path = "/update/sent";
         BaseResponseBean<CreatedOrderBean> orderBean = new BaseResponseBean<>();
-
-        if (orderCustomerInfo == null) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
 
         Optional<OrderHeader> headerData = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
         if (headerData.isEmpty())
@@ -254,8 +242,6 @@ public class OrderService {
         BaseResponseBean<CreatedOrderBean> orderBean = new BaseResponseBean<>();
 
         long customerId = orderCustomerInfo.getId();
-
-        if (orderCustomerInfo == null) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
 
         Optional<OrderHeader> headerData = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
         if (headerData.isEmpty())
@@ -295,7 +281,7 @@ public class OrderService {
             cart.setQuantity(item.getQty());
             products.add(cart);
         }
-        OrderLogicService.updateStockProduct(products, false);
+        this.orderLogicService.updateStockProduct(products, false);
         return orderBean;
     }
 
@@ -304,8 +290,6 @@ public class OrderService {
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
 
         long customerId = orderCustomerInfo.getId();
-
-        if (orderCustomerInfo == null) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
 
         Optional<OrderHeader> orderHeaderData = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
         if (orderHeaderData.isEmpty())
@@ -344,16 +328,14 @@ public class OrderService {
             cart.setQuantity(item.getQty());
             products.add(cart);
         }
-        OrderLogicService.updateStockProduct(products, false);
+        this.orderLogicService.updateStockProduct(products, false);
         return response;
     }
 
     public BaseResponseBean<FullOrderInfoBean> getFullOrderInfo(String orderNumber, OrderCustomerInfo orderCustomerInfo) {
         String path = "/detail";
         BaseResponseBean<FullOrderInfoBean> response = new BaseResponseBean<>();
-        Long customerId = orderCustomerInfo.getId();
-
-        if (orderCustomerInfo == null) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer", path);
+        long customerId = orderCustomerInfo.getId();
 
         Optional<OrderHeader> orderHeader = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
         if (orderHeader.isEmpty())
@@ -375,10 +357,22 @@ public class OrderService {
         // get product info api for below list
         List<OrderDetail> orderDetailList = data.getOrderDetailList();
         List<Integer> temp = new ArrayList<>();
-        for (int i = 0; i < orderDetailList.size(); i++) {
-            temp.add(Math.toIntExact(orderDetailList.get(i).getProductId()));
+        for (OrderDetail orderDetail : orderDetailList) {
+            temp.add(Math.toIntExact(orderDetail.getProductId()));
         }
-        OrderProductResponse orderProductResponse = OrderLogicService.getAllProductInfo(temp);
+        OrderProductResponse orderProductResponse = this.orderLogicService.getAllProductInfo(temp);
+        List<OrderDetailBean> detailsBean = getOrderDetailBeans(orderProductResponse, orderDetailList);
+        infoBean.setOrderDetailList(detailsBean);
+
+        response.setStatus(HttpStatus.OK);
+        response.setData(infoBean);
+        response.setMessage(HttpStatus.OK.getReasonPhrase());
+        response.setCode(200);
+        response.setTimestamp(LocalDateTime.now());
+        return response;
+    }
+
+    private static List<OrderDetailBean> getOrderDetailBeans(OrderProductResponse orderProductResponse, List<OrderDetail> orderDetailList) {
         List<OrderDetailBean> detailsBean = new ArrayList<>();
         for (int i = 0; i < orderProductResponse.getData().size(); i++) {
             OrderProductInfo item = orderProductResponse.getData().get(i);
@@ -391,14 +385,7 @@ public class OrderService {
             orderDetailBean.setProductImage(item.getProductImage());
             detailsBean.add(orderDetailBean);
         }
-        infoBean.setOrderDetailList(detailsBean);
-
-        response.setStatus(HttpStatus.OK);
-        response.setData(infoBean);
-        response.setMessage(HttpStatus.OK.getReasonPhrase());
-        response.setCode(200);
-        response.setTimestamp(LocalDateTime.now());
-        return response;
+        return detailsBean;
     }
 
     public BaseResponseBean<String> generateCsvReport(String status) {
@@ -410,7 +397,7 @@ public class OrderService {
             } else {
                 allOrder = this.orderHeaderRepository.findAllByStatus(status, Sort.by("createdAt").descending());
             }
-            StringWriter csvData = OrderLogicService.createCsv(allOrder);
+            StringWriter csvData = this.orderLogicService.createCsv(allOrder);
             this.emailService.sendEmailToAdmin("naufal.pramudya11@gmail.com",
                     "Order Report for Admin",
                     String.format("The attached csv file contains %s customer order data from the database", status),
@@ -432,8 +419,6 @@ public class OrderService {
         BaseResponseBean<CreatedOrderBean> response = new BaseResponseBean<>();
 
         long customerId = orderCustomerInfo.getId();
-
-        if (orderCustomerInfo == null) throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Invalid Customer Id", path);
 
         Optional<OrderHeader> orderHeaderData = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
         Optional<OrderDelivery> orderDeliveryData = this.orderDeliveryRepository.findByOrderHeader(orderHeaderData.get());
@@ -469,11 +454,11 @@ public class OrderService {
         // get product info api for htmlContent arr list
         List<OrderDetail> orderDetailList = orderHeader.getOrderDetailList();
         List<Integer> temp = new ArrayList<>();
-        for (int i = 0; i < orderDetailList.size(); i++) {
-            temp.add(Math.toIntExact(orderDetailList.get(i).getProductId()));
+        for (OrderDetail orderDetail : orderDetailList) {
+            temp.add(Math.toIntExact(orderDetail.getProductId()));
         }
-        OrderProductResponse orderProductResponse = OrderLogicService.getAllProductInfo(temp);
-        String htmlContent = OrderLogicService.orderReportHtml(orderHeader, orderProductResponse);
+        OrderProductResponse orderProductResponse = this.orderLogicService.getAllProductInfo(temp);
+        String htmlContent = this.orderLogicService.orderReportHtml(orderHeader, orderProductResponse);
         try {
             this.emailService.sendEmailToCustomer(orderCustomerInfo.getEmail(), "Order Report", htmlContent);
         } catch (MessagingException e) {

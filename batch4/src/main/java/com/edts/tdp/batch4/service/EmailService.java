@@ -41,7 +41,7 @@ public class EmailService {
 
             private InputStream toInputStream(String content) {
                 return new InputStream() {
-                    private byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+                    private final byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
                     private int currentIndex = 0;
 
                     @Override
@@ -64,8 +64,7 @@ public class EmailService {
         MimeMessageHelper helper;
 
         helper = new MimeMessageHelper(message, true);
-//        helper.setTo(toEmail);
-        helper.setTo("naufal.pramudya11@gmail.com");
+        helper.setTo(toEmail);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
 
