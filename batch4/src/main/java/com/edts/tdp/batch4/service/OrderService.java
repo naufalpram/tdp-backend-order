@@ -10,7 +10,6 @@ import com.edts.tdp.batch4.bean.response.CreatedOrderBean;
 import com.edts.tdp.batch4.bean.response.FullOrderInfoBean;
 import com.edts.tdp.batch4.bean.response.OrderDetailBean;
 import com.edts.tdp.batch4.constant.Status;
-import com.edts.tdp.batch4.bean.request.RequestProductBean;
 import com.edts.tdp.batch4.exception.OrderCustomException;
 import com.edts.tdp.batch4.model.*;
 import com.edts.tdp.batch4.repository.OrderDeliveryRepository;
@@ -57,7 +56,7 @@ public class OrderService {
         this.orderLogicService = orderLogicService;
     }
 
-    public BaseResponseBean<CreatedOrderBean> createOrder(List<RequestProductBean> body, OrderCustomerInfo orderCustomerInfo) {
+    public BaseResponseBean<CreatedOrderBean> createOrder(OrderCustomerInfo orderCustomerInfo, HttpServletRequest httpServletRequest) {
         String path = "/order/create";
         List<LinkedHashMap<String, Integer>> cartData = orderLogicService.getCartData(httpServletRequest, path);
         List<OrderCartBean> cart = new ArrayList<>();
@@ -76,7 +75,7 @@ public class OrderService {
         DecimalFormat distanceFormat = new DecimalFormat("#.00");
 
         // get cart data customer API
-        if(body.isEmpty()){
+        if(cart.isEmpty()){
             throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Body length can't be zero", path);
         }
 

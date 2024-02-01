@@ -15,7 +15,6 @@ import com.edts.tdp.batch4.model.OrderHeader;
 import com.edts.tdp.batch4.utils.JwtUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.opencsv.CSVWriter;
-import jakarta.persistence.criteria.Order;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -257,10 +256,6 @@ public class OrderLogicService {
                                                                 HttpMethod.POST,
                                                                 httpEntity,
                                                                 String.class);
-        if ( response.getStatusCode().equals(HttpStatus.OK) ) {
-            return true;
-        } else {
-            return false;
-        }
+        return response.getStatusCode().equals(HttpStatus.OK);
     }
 }
