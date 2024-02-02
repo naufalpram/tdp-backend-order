@@ -52,7 +52,7 @@ public class OrderHeaderTest {
     void testGetCreatedAt(){assertEquals(createdAt, orderHeader.getCreatedAt());}
 
     @Test //true test
-    void testGetCreateBy(){assertEquals(12, orderHeader.getCreatedBy());}
+    void testGetCreateBy(){assertEquals("Amini", orderHeader.getCreatedBy());}
 
     @Test //false test
     void testGetWrongCreateBy(){assertNotEquals(1, orderHeader.getCreatedBy());}
