@@ -35,7 +35,7 @@ public class OrderHeader {
     @Column(name = "customer_id", nullable = false)
     private Long customerId;
 
-    @Column(name = "order_number", unique = true, length = 24)
+    @Column(name = "order_number", unique = true)
     private String orderNumber;
 
     @Column(name = "total_paid", nullable = false)
@@ -45,10 +45,10 @@ public class OrderHeader {
     private String status;
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "orderHeader")
+    @OneToMany(mappedBy = "orderHeader", cascade = CascadeType.ALL)
     private List<OrderDetail> orderDetailList;
 
-    @OneToOne(mappedBy = "orderHeader")
+    @OneToOne(mappedBy = "orderHeader", cascade = CascadeType.ALL)
     @JsonIgnoreProperties({"orderHeader"})
     private OrderDelivery orderDelivery;
 

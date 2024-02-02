@@ -28,10 +28,7 @@ import org.springframework.stereotype.Service;
 import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class OrderService {
@@ -98,6 +95,7 @@ public class OrderService {
         orderDelivery.setCreatedBy(orderCustomerInfo.getUsername());
         orderDelivery.setStreet(orderCustomerAddress.getStreet());
         orderDelivery.setProvince(orderCustomerAddress.getProvince());
+        orderDelivery.setPostCode(orderCustomerAddress.getPostcode());
         orderDelivery.setDistanceInKm(Double.parseDouble(distanceFormat.format(distance)));
         orderDelivery.setLatitude(orderCustomerAddress.getLatitude());
         orderDelivery.setLongitude(orderDelivery.getLongitude());
@@ -199,9 +197,9 @@ public class OrderService {
      * @return BaseResponseBean with type CreatedOrderBean
      */
     public BaseResponseBean<Page<CreatedOrderBean>> findAllByCustomerIdAndStatus(String status,
-                                                                            int page,
-                                                                            int size,
-                                                                            OrderCustomerInfo orderCustomerInfo) {
+                                                                                 int page,
+                                                                                 int size,
+                                                                                 OrderCustomerInfo orderCustomerInfo) {
         String path = "/get-history/filter";
         Pageable pageable = PageRequest.of(page,size, Sort.by("createdAt").descending());
 
@@ -442,12 +440,20 @@ public class OrderService {
      */
     public BaseResponseBean<String> generateCsvReport(String status) {
         String path = "/generate-report";
+        ArrayList<String> statuses = new ArrayList<>();
+        statuses.add("ordered");
+        statuses.add("sent");
+        statuses.add("delivered");
+        statuses.add("cancelled");
+        statuses.add("returned");
         try {
             List<OrderHeader> allOrder;
             if (status.equals("all")) {
                 allOrder = this.orderHeaderRepository.findAll(Sort.by("createdAt").descending());
-            } else {
+            } else if (statuses.contains(status.toLowerCase())) {
                 allOrder = this.orderHeaderRepository.findAllByStatus(status, Sort.by("createdAt").descending());
+            } else {
+                throw new OrderCustomException(HttpStatus.BAD_REQUEST, "Not valid status", path);
             }
             StringWriter csvData = this.orderLogicService.createCsv(allOrder);
             this.emailService.sendEmailToAdmin("naufal.pramudya11@gmail.com",
@@ -478,9 +484,9 @@ public class OrderService {
         long customerId = orderCustomerInfo.getId();
 
         Optional<OrderHeader> orderHeaderData = this.orderHeaderRepository.findByCustomerIdAndOrderNumber(customerId, orderNumber);
-        Optional<OrderDelivery> orderDeliveryData = this.orderDeliveryRepository.findByOrderHeader(orderHeaderData.get());
         if (orderHeaderData.isEmpty())
             throw new OrderCustomException(HttpStatus.NOT_FOUND, String.format("Order With order number: %s is not found", orderNumber), path);
+        Optional<OrderDelivery> orderDeliveryData = this.orderDeliveryRepository.findByOrderHeader(orderHeaderData.get());
 
         OrderHeader orderHeader = orderHeaderData.get();
         OrderDelivery orderDelivery = orderDeliveryData.get();

@@ -37,8 +37,8 @@ public class OrderController {
 
     @GetMapping("/get-history")
     public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrders(@RequestParam int page,
-                                                                            @RequestParam int size,
-                                                                            HttpServletRequest httpServletRequest) {
+                                                                                 @RequestParam int size,
+                                                                                 HttpServletRequest httpServletRequest) {
 
         OrderCustomerInfo orderCustomerInfo = orderLogicService.getCustomerInfo(httpServletRequest, "/get-history");
         BaseResponseBean<Page<CreatedOrderBean>> response;
@@ -48,9 +48,9 @@ public class OrderController {
 
     @GetMapping("/get-history/filter")
     public ResponseEntity<BaseResponseBean<Page<CreatedOrderBean>>> getAllOrdersByStatus(@RequestBody Map<String, String> request,
-                                                                                    @RequestParam int page,
-                                                                                    @RequestParam int size,
-                                                                                    HttpServletRequest httpServletRequest) {
+                                                                                         @RequestParam int page,
+                                                                                         @RequestParam int size,
+                                                                                         HttpServletRequest httpServletRequest) {
 
         // validate token
         if (!request.containsKey("status"))
