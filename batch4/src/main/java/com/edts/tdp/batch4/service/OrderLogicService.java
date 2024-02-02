@@ -81,6 +81,7 @@ public class OrderLogicService {
      */
     public OrderCustomerInfo getCustomerInfo(HttpServletRequest httpServletRequest, String path) {
         String authHeader = httpServletRequest.getHeader("Authorization");
+        if (authHeader == null) throw new OrderCustomException(HttpStatus.UNAUTHORIZED, "Not Authorized", path);
         String token = authHeader.substring(7);
         boolean isValidToken = jwtUtil.validateToken(token, path);
 
