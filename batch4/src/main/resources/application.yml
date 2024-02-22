@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: tdp
+    url: jdbc:mysql://172.18.185.131:3306/tdp4_order
+    password: tdp2024
+  jpa:
+    generate-ddl: 'false'
+    open-in-view: true
+    #    database-platform: org.hibernate.dialect.MySQL5Dialect
+    hibernate:
+      ddl-auto: update
+  mail:
+    host: smtp.gmail.com
+    #  vdqn btsl jpgv rarl
+    password: vdqnbtsljpgvrarl
+    port: 587
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    username: naufal.pramudya@sg-dsa.com
+rsa:
+  public-key: classpath:certs/public.pem
